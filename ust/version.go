@@ -6,7 +6,10 @@ import "fmt"
 type Version int
 
 const (
+	// Version1_2 is UST 1.2 .
 	Version1_2 Version = iota
+
+	// Version2_0 is UST 2.0 .
 	Version2_0
 )
 
