@@ -2,7 +2,7 @@ package ust
 
 import "fmt"
 
-// Version represents a UST file version.
+// Version represents an UST file format version.
 type Version int
 
 const (
