@@ -5,7 +5,7 @@ package ust
 type Settings struct {
 	Tempo       float64 // Tempo is the tempo (in BPM).
 	ProjectName string  // ProjectName is a human-readable name of the project.
-	Project     string  // Project is the path of the project (used only in OpenUtau).
+	Project     string  // Project is the path to the project (used only in OpenUtau).
 	VoiceDir    string  // VoiceDir is the directory path to the voicebank.
 	OutFile     string  // OutFile is the path to the output audio file that will be generated.
 	CacheDir    string  // CacheDir is the directory path for cached temporary data.
