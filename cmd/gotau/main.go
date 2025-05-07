@@ -38,5 +38,4 @@ PBM=,
 	}
 
 	fmt.Printf("f: %+v\n", f)
-	fmt.Printf("f.Settings: %+v\n", f.Settings)
 }
