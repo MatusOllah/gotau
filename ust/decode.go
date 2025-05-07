@@ -38,6 +38,8 @@ func Decode(r io.Reader) (*File, error) {
 				return nil, fmt.Errorf("failed to parse settings: %w", err)
 			}
 		}
+
+		//TODO: parse notes
 	}
 
 	return file, nil
