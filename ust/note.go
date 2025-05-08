@@ -18,3 +18,8 @@ type Note struct {
 	Envelope     *Envelope  // Envelope is the volume envelope.
 	PitchBend    *PitchBend // PitchBend is the pitch bend data.
 }
+
+// IsLyricRest checks whether the lyrics is a rest / pause (e.g. "-", "R").
+func IsLyricRest(s string) bool {
+	return s == "-" || s == "R"
+}
