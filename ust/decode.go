@@ -3,6 +3,8 @@ package ust
 import (
 	"fmt"
 	"io"
+	"log/slog"
+	"regexp"
 	"strings"
 
 	"github.com/go-ini/ini"
@@ -22,24 +24,29 @@ func Decode(r io.Reader) (*File, error) {
 	}
 
 	for _, sec := range file.iniFile.Sections() {
-		if sec.Name() == "DEFAULT" {
+		switch sec.Name() {
+		case "DEFAULT":
 			continue
-		}
-		if sec.Name() == "#TRACKEND" {
-			break
-		}
-		if sec.Name() == "#VERSION" {
+		case "#VERSION":
 			if err := file.parseVersion(sec); err != nil {
 				return nil, fmt.Errorf("failed to parse version section: %w", err)
 			}
-		}
-		if sec.Name() == "#SETTING" {
+		case "#SETTING":
 			if err := file.parseSetting(sec); err != nil {
 				return nil, fmt.Errorf("failed to parse settings: %w", err)
 			}
+		case "#TRACKEND":
+			break
+		default:
+			if ok, err := regexp.MatchString(`#\d+`, sec.Name()); err == nil && ok {
+				//TODO: parse notes
+			} else if err == nil && !ok {
+				slog.Warn("invalid section, skipping", "name", sec.Name())
+				continue
+			} else if err != nil {
+				return nil, fmt.Errorf("failed to match string to regex: %w", err)
+			}
 		}
-
-		//TODO: parse notes
 	}
 
 	return file, nil
