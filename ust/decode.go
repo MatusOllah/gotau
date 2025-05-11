@@ -8,7 +8,10 @@ import (
 	"strings"
 
 	"github.com/go-ini/ini"
+	"gitlab.com/gomidi/midi/v2"
 )
+
+var noteRe *regexp.Regexp = regexp.MustCompile(`#\d+`)
 
 // Decode decodes a UST file.
 func Decode(r io.Reader) (*File, error) {
@@ -38,13 +41,13 @@ func Decode(r io.Reader) (*File, error) {
 		case "#TRACKEND":
 			break
 		default:
-			if ok, err := regexp.MatchString(`#\d+`, sec.Name()); err == nil && ok {
-				//TODO: parse notes
-			} else if err == nil && !ok {
+			if noteRe.MatchString(sec.Name()) {
+				if err := file.parseNote(sec); err != nil {
+					return nil, fmt.Errorf("failed to parse note %s: %w", sec.Name(), err)
+				}
+			} else {
 				slog.Warn("invalid section, skipping", "name", sec.Name())
 				continue
-			} else if err != nil {
-				return nil, fmt.Errorf("failed to match string to regex: %w", err)
 			}
 		}
 	}
@@ -96,6 +99,113 @@ func (f *File) parseSetting(sec *ini.Section) (err error) {
 	f.Settings.Mode2, err = sec.Key("Mode2").Bool()
 	if err != nil {
 		return fmt.Errorf("failed to parse Mode2: %w", err)
+	}
+
+	return nil
+}
+
+func (f *File) parseNote(sec *ini.Section) (err error) {
+	note := Note{}
+
+	// Length
+	note.Length, err = sec.Key("Length").Int()
+	if err != nil {
+		return fmt.Errorf("failed to parse length: %w", err)
+	}
+
+	// Lyric
+	note.Lyric = strings.TrimSpace(sec.Key("Lyric").String())
+
+	// NoteNum
+	_noteNum, err := sec.Key("NoteNum").Uint()
+	if err != nil {
+		return fmt.Errorf("failed to parse note number: %w", err)
+	}
+	note.NoteNum = midi.Note(_noteNum)
+
+	// Intensity
+	note.Intensity = 100
+	if key, err := sec.GetKey("Intensity"); err == nil {
+		note.Intensity, err = key.Float64()
+		if err != nil {
+			return fmt.Errorf("failed to parse intensity: %w", err)
+		}
+	}
+
+	// Velocity
+	note.Velocity = nil
+	if key, err := sec.GetKey("Velocity"); err == nil {
+		_velocity, err := key.Float64()
+		if err != nil {
+			return fmt.Errorf("failed to parse velocity: %w", err)
+		}
+		note.Velocity = &_velocity
+	}
+
+	// Modulation
+	note.Modulation = 0
+	if key, err := sec.GetKey("Modulation"); err == nil {
+		note.Modulation, err = key.Float64()
+		if err != nil {
+			return fmt.Errorf("failed to parse modulation: %w", err)
+		}
+	}
+
+	// PreUtterance
+	note.PreUtterance = nil
+	if key, err := sec.GetKey("PreUtterance"); err == nil {
+		_preUtterance, err := key.Float64()
+		if err != nil {
+			return fmt.Errorf("failed to parse pre-utterance: %w", err)
+		}
+		note.PreUtterance = &_preUtterance
+	}
+
+	// VoiceOverlap
+	note.VoiceOverlap = nil
+	if key, err := sec.GetKey("VoiceOverlap"); err == nil {
+		_voiceOverlap, err := key.Float64()
+		if err != nil {
+			return fmt.Errorf("failed to parse voice overlap: %w", err)
+		}
+		note.VoiceOverlap = &_voiceOverlap
+	}
+
+	// StartPoint
+	note.StartPoint = nil
+	if key, err := sec.GetKey("StartPoint"); err == nil {
+		_startPoint, err := key.Float64()
+		if err != nil {
+			return fmt.Errorf("failed to parse start point: %w", err)
+		}
+		note.StartPoint = &_startPoint
+	}
+
+	// Envelope
+	note.Envelope = nil
+	if key, err := sec.GetKey("Envelope"); err == nil {
+		_envelope, err := ParseEnvelope(key.String())
+		if err != nil {
+			return fmt.Errorf("failed to parse envelope: %w", err)
+		}
+		note.Envelope = _envelope
+	}
+
+	// Pitch bend (PB*)
+	note.PitchBend = nil
+	if sec.HasKey("PBS") || sec.HasKey("PBStart") {
+		_pb, err := ParsePitchBend(
+			sec.Key("PBType").String(),
+			sec.Key("PBStart").String(),
+			sec.Key("PBS").String(),
+			sec.Key("PBW").String(),
+			sec.Key("PBY").String(),
+			sec.Key("PBM").String(),
+		)
+		if err != nil {
+			return fmt.Errorf("failed to parse pitch bend data: %w", err)
+		}
+		note.PitchBend = _pb
 	}
 
 	return nil

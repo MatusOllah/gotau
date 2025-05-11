@@ -19,3 +19,9 @@ type PitchBend struct {
 	Ys     []float64       // Ys are the pitch offsets in semitones for each segment.
 	Modes  []PitchBendMode // Modes are the interpolation modes for each segment.
 }
+
+func ParsePitchBend(typ, start, pbs, pbw, pby, pbm string) (*PitchBend, error) {
+	//TODO: parse pitch bend
+
+	return nil, nil
+}

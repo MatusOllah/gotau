@@ -3,6 +3,7 @@ module github.com/MatusOllah/gotau
 go 1.24.2
 
 require (
+	github.com/MatusOllah/slicestrconv v1.0.0
 	github.com/go-ini/ini v1.67.0
 	gitlab.com/gomidi/midi/v2 v2.3.6
 	gonum.org/v1/plot v0.16.0
