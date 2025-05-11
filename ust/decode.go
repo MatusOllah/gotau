@@ -125,7 +125,7 @@ func (f *File) parseNote(sec *ini.Section) (err error) {
 
 	// Intensity
 	note.Intensity = 100
-	if key, err := sec.GetKey("Intensity"); err == nil {
+	if key, err := sec.GetKey("Intensity"); err == nil && key.String() != "" {
 		note.Intensity, err = key.Float64()
 		if err != nil {
 			return fmt.Errorf("failed to parse intensity: %w", err)
@@ -134,7 +134,7 @@ func (f *File) parseNote(sec *ini.Section) (err error) {
 
 	// Velocity
 	note.Velocity = nil
-	if key, err := sec.GetKey("Velocity"); err == nil {
+	if key, err := sec.GetKey("Velocity"); err == nil && key.String() != "" {
 		_velocity, err := key.Float64()
 		if err != nil {
 			return fmt.Errorf("failed to parse velocity: %w", err)
@@ -144,7 +144,7 @@ func (f *File) parseNote(sec *ini.Section) (err error) {
 
 	// Modulation
 	note.Modulation = 0
-	if key, err := sec.GetKey("Modulation"); err == nil {
+	if key, err := sec.GetKey("Modulation"); err == nil && key.String() != "" {
 		note.Modulation, err = key.Float64()
 		if err != nil {
 			return fmt.Errorf("failed to parse modulation: %w", err)
@@ -153,7 +153,7 @@ func (f *File) parseNote(sec *ini.Section) (err error) {
 
 	// PreUtterance
 	note.PreUtterance = nil
-	if key, err := sec.GetKey("PreUtterance"); err == nil {
+	if key, err := sec.GetKey("PreUtterance"); err == nil && key.String() != "" {
 		_preUtterance, err := key.Float64()
 		if err != nil {
 			return fmt.Errorf("failed to parse pre-utterance: %w", err)
@@ -163,7 +163,7 @@ func (f *File) parseNote(sec *ini.Section) (err error) {
 
 	// VoiceOverlap
 	note.VoiceOverlap = nil
-	if key, err := sec.GetKey("VoiceOverlap"); err == nil {
+	if key, err := sec.GetKey("VoiceOverlap"); err == nil && key.String() != "" {
 		_voiceOverlap, err := key.Float64()
 		if err != nil {
 			return fmt.Errorf("failed to parse voice overlap: %w", err)
@@ -173,7 +173,7 @@ func (f *File) parseNote(sec *ini.Section) (err error) {
 
 	// StartPoint
 	note.StartPoint = nil
-	if key, err := sec.GetKey("StartPoint"); err == nil {
+	if key, err := sec.GetKey("StartPoint"); err == nil && key.String() != "" {
 		_startPoint, err := key.Float64()
 		if err != nil {
 			return fmt.Errorf("failed to parse start point: %w", err)
@@ -183,7 +183,7 @@ func (f *File) parseNote(sec *ini.Section) (err error) {
 
 	// Envelope
 	note.Envelope = nil
-	if key, err := sec.GetKey("Envelope"); err == nil {
+	if key, err := sec.GetKey("Envelope"); err == nil && key.String() != "" {
 		_envelope, err := ParseEnvelope(key.String())
 		if err != nil {
 			return fmt.Errorf("failed to parse envelope: %w", err)
@@ -207,6 +207,8 @@ func (f *File) parseNote(sec *ini.Section) (err error) {
 		}
 		note.PitchBend = _pb
 	}
+
+	f.Notes = append(f.Notes, note)
 
 	return nil
 }
