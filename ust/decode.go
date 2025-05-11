@@ -68,35 +68,20 @@ func (f *File) parseVersion(sec *ini.Section) error {
 func (f *File) parseSetting(sec *ini.Section) (err error) {
 	f.Settings = Settings{}
 
-	// Tempo
-	f.Settings.Tempo, err = sec.Key("Tempo").Float64()
+	f.Settings.Tempo, err = sec.Key("Tempo").Float64() // Tempo
 	if err != nil {
 		return fmt.Errorf("failed to parse tempo: %w", err)
 	}
 
-	// ProjectName
-	f.Settings.ProjectName = sec.Key("ProjectName").String()
+	f.Settings.ProjectName = sec.Key("ProjectName").String() // ProjectName
+	f.Settings.Project = sec.Key("Project").String()         // Project (OpenUtau)
+	f.Settings.VoiceDir = sec.Key("VoiceDir").String()       // VoiceDir
+	f.Settings.OutFile = sec.Key("OutFile").String()         // OutFile
+	f.Settings.CacheDir = sec.Key("CacheDir").String()       // CacheDir
+	f.Settings.Tool1 = sec.Key("Tool1").String()             // Tool1
+	f.Settings.Tool2 = sec.Key("Tool2").String()             // Tool2
 
-	// Project (OpenUtau)
-	f.Settings.Project = sec.Key("Project").String()
-
-	// VoiceDir
-	f.Settings.VoiceDir = sec.Key("VoiceDir").String()
-
-	// OutFile
-	f.Settings.OutFile = sec.Key("OutFile").String()
-
-	// CacheDir
-	f.Settings.CacheDir = sec.Key("CacheDir").String()
-
-	// Tool1
-	f.Settings.Tool1 = sec.Key("Tool1").String()
-
-	// Tool2
-	f.Settings.Tool2 = sec.Key("Tool2").String()
-
-	// Mode2
-	f.Settings.Mode2, err = sec.Key("Mode2").Bool()
+	f.Settings.Mode2, err = sec.Key("Mode2").Bool() // Mode2
 	if err != nil {
 		return fmt.Errorf("failed to parse Mode2: %w", err)
 	}
