@@ -17,21 +17,15 @@ jobs:
       with:
         go-version-file: "go.mod"
     
-    - name: Deps cache
-      id: cache-go-deps
+    - name: Cache Go dependencies
       uses: actions/cache@v4
-      env:
-        cache-name: go-deps-cache
       with:
-        path: ~/godeps
-        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/go.sum') }}
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
         restore-keys: |
-          ${{ runner.os }}-build-${{ env.cache-name }}-
-
-    - if: ${{ steps.cache-go-deps.outputs.cache-hit != 'true' }}
-      name: List the state of go modules
-      continue-on-error: true
-      run: go mod graph
+          ${{ runner.os }}-go-
     
     - name: Install dependencies
       run: |
@@ -43,4 +37,4 @@ jobs:
       run: golangci-lint run
 
     - name: Run tests
-      run: go test ./...
+      run: go test -v ./...
