@@ -26,6 +26,11 @@ func Decode(r io.Reader) (*File, error) {
 		return nil, fmt.Errorf("failed to parse INI: %w", err)
 	}
 
+	// TODO: detect charset (e.g. Shift JIS)
+	// [#VERSION]
+	// UST Version1.2
+	// Charset=shift-jis
+
 	for _, sec := range file.iniFile.Sections() {
 		switch sec.Name() {
 		case "DEFAULT":
