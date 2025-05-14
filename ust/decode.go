@@ -62,7 +62,7 @@ func Decode(r io.Reader) (*File, error) {
 
 func (f *File) parseVersion(sec *ini.Section) error {
 	f.Version = Version1_2
-	ver, err := ParseVersion(strings.TrimSpace(sec.Body()))
+	ver, err := ParseVersion(strings.TrimSpace(strings.Split(sec.Body(), "\n")[0]))
 	if err != nil {
 		return err
 	}
