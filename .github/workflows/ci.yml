@@ -32,11 +32,8 @@ jobs:
         go mod tidy
         go mod download
     
-    - name: Install golangci-lint
-      uses: golangci/golangci-lint-action@v8
-
     - name: Run golangci-lint
-      run: golangci-lint run
+      uses: golangci/golangci-lint-action@v8
 
     - name: Run tests
       run: go test -v ./...
