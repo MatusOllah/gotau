@@ -14,10 +14,9 @@ import (
 var noteRe *regexp.Regexp = regexp.MustCompile(`#\d+`)
 
 // Decode decodes a UST file.
-func Decode(r io.Reader) (*File, error) {
-	file := &File{}
+func Decode(r io.Reader) (file *File, err error) {
+	file = &File{}
 
-	var err error
 	loadopts := ini.LoadOptions{
 		UnparseableSections: []string{"#VERSION"},
 	}
@@ -25,11 +24,6 @@ func Decode(r io.Reader) (*File, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse INI: %w", err)
 	}
-
-	// TODO: detect charset (e.g. Shift JIS)
-	// [#VERSION]
-	// UST Version1.2
-	// Charset=shift-jis
 
 	for _, sec := range file.iniFile.Sections() {
 		switch sec.Name() {
@@ -62,11 +56,15 @@ func Decode(r io.Reader) (*File, error) {
 
 func (f *File) parseVersion(sec *ini.Section) error {
 	f.Version = Version1_2
-	ver, err := ParseVersion(strings.TrimSpace(strings.Split(sec.Body(), "\n")[0]))
-	if err != nil {
-		return err
+	for line := range strings.SplitSeq(sec.Body(), "\n") {
+		if strings.Contains(line, "UST Version") {
+			ver, err := ParseVersion(strings.TrimSpace(line))
+			if err != nil {
+				return err
+			}
+			f.Version = ver
+		}
 	}
-	f.Version = ver
 	return nil
 }
 

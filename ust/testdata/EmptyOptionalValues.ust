@@ -1,0 +1,19 @@
+[#VERSION]
+UST Version1.2
+[#SETTING]
+Tempo=120
+ProjectName=EmptyOptionalValues
+VoiceDir=path/to/voicebank
+OutFile=path/to/output.wav
+Tool1=wavtool
+Tool2=resampler
+Mode2=true
+[#0000]
+Length=720
+Lyric=a
+NoteNum=69
+Modulation=0
+PreUtterance=
+VoiceOverlap=
+StartPoint=
+[#TRACKEND]
