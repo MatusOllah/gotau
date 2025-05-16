@@ -31,7 +31,9 @@ jobs:
       run: |
         go mod tidy
         go mod download
-        go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+    
+    - name: Install golangci-lint
+      uses: golangci/golangci-lint-action@v8
 
     - name: Run golangci-lint
       run: golangci-lint run
