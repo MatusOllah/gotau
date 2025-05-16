@@ -5,3 +5,11 @@ linters:
     govet:
       disable:
         - composites
+    
+    errcheck:
+      exclude-functions:
+        - (*os.File).Close
+        - (io/fs.File).Close
+        - io.Copy(*bytes.Buffer)
+        - io.Copy(os.Stdout)
+        - io.Copy(os.Stderr)

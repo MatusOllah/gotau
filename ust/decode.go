@@ -38,7 +38,7 @@ func Decode(r io.Reader) (file *File, err error) {
 				return nil, fmt.Errorf("failed to parse settings: %w", err)
 			}
 		case "#TRACKEND":
-			break
+			return file, nil
 		default:
 			if noteRe.MatchString(sec.Name()) {
 				if err := file.parseNote(sec); err != nil {
