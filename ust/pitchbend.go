@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/MatusOllah/gotau/umath"
 	"github.com/MatusOllah/slicestrconv"
-	"gonum.org/v1/plot/plotter"
 )
 
 // PitchBendMode represents a pitch bend segment interpolation mode.
@@ -70,11 +70,11 @@ func ParsePitchBendMode(s string) (PitchBendMode, error) {
 
 // PitchBend represents the pitch bend data.
 type PitchBend struct {
-	Type   int             // Type is the pitch bend type (0 = no bend, 5 = default).
-	Start  plotter.XY      // Start is the starting point in ticks (X-axis) and initial pitch offset (Y-axis in semitones).
-	Widths []float64       // Widths are the widths in ticks for each pitch segment.
-	Ys     []float64       // Ys are the pitch offsets in semitones for each segment.
-	Modes  []PitchBendMode // Modes are the interpolation modes for each segment.
+	Type   int               // Type is the pitch bend type (0 = no bend, 5 = default).
+	Start  umath.XY[float64] // Start is the starting point in ticks (X-axis) and initial pitch offset (Y-axis in semitones).
+	Widths []float64         // Widths are the widths in ticks for each pitch segment.
+	Ys     []float64         // Ys are the pitch offsets in semitones for each segment.
+	Modes  []PitchBendMode   // Modes are the interpolation modes for each segment.
 }
 
 func ParsePitchBend(typ, start, pbs, pbw, pby, pbm string) (pb *PitchBend, err error) {
@@ -143,14 +143,14 @@ func (pb *PitchBend) parseStart(s string) error {
 			return err
 		}
 	}
-	pb.Start = plotter.XY{X: x, Y: y}
+	pb.Start = umath.XY[float64]{X: x, Y: y}
 	return nil
 }
 
 // Curve computes a curve from the pitch bend data.
-func (pb *PitchBend) Curve() plotter.XYs {
+func (pb *PitchBend) Curve() []umath.XY[float64] {
 	const samplesPerSegment = 10
-	curve := plotter.XYs{}
+	curve := []umath.XY[float64]{}
 	prevX, prevY := pb.Start.X, pb.Start.Y
 
 	// Handle cases where we have incomplete data
@@ -187,7 +187,7 @@ func (pb *PitchBend) Curve() plotter.XYs {
 			}
 
 			x := prevX + width*t
-			curve = append(curve, plotter.XY{X: x, Y: y})
+			curve = append(curve, umath.XY[float64]{X: x, Y: y})
 		}
 
 		prevX = endX

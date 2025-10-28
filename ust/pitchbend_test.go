@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/MatusOllah/gotau/umath"
 	"github.com/MatusOllah/gotau/ust"
 	"github.com/stretchr/testify/assert"
-	"gonum.org/v1/plot/plotter"
 )
 
 func TestPitchBendMode_String(t *testing.T) {
@@ -84,32 +84,32 @@ func TestPitchBend_Curve(t *testing.T) {
 		name     string
 		pb       *ust.PitchBend
 		expected int
-		check    func(t *testing.T, curve plotter.XYs)
+		check    func(t *testing.T, curve []umath.XY[float64])
 	}{
 		{
 			name: "LinearSegment",
 			pb: &ust.PitchBend{
-				Start:  plotter.XY{X: 0, Y: 0},
+				Start:  umath.XY[float64]{X: 0, Y: 0},
 				Widths: []float64{10},
 				Ys:     []float64{10},
 				Modes:  []ust.PitchBendMode{ust.PitchBendModeLinear},
 			},
 			expected: 11,
-			check: func(t *testing.T, curve plotter.XYs) {
-				assert.Equal(t, plotter.XY{X: 0, Y: 0}, curve[0])
-				assert.Equal(t, plotter.XY{X: 10, Y: 10}, curve[len(curve)-1])
+			check: func(t *testing.T, curve []umath.XY[float64]) {
+				assert.Equal(t, umath.XY[float64]{X: 0, Y: 0}, curve[0])
+				assert.Equal(t, umath.XY[float64]{X: 10, Y: 10}, curve[len(curve)-1])
 			},
 		},
 		{
 			name: "RigidSegment",
 			pb: &ust.PitchBend{
-				Start:  plotter.XY{X: 5, Y: 3},
+				Start:  umath.XY[float64]{X: 5, Y: 3},
 				Widths: []float64{10},
 				Ys:     []float64{7},
 				Modes:  []ust.PitchBendMode{ust.PitchBendModeRigid},
 			},
 			expected: 11,
-			check: func(t *testing.T, curve plotter.XYs) {
+			check: func(t *testing.T, curve []umath.XY[float64]) {
 				for _, pt := range curve {
 					assert.Equal(t, 3.0, pt.Y)
 				}
@@ -118,13 +118,13 @@ func TestPitchBend_Curve(t *testing.T) {
 		{
 			name: "JumpSegment",
 			pb: &ust.PitchBend{
-				Start:  plotter.XY{X: 0, Y: 0},
+				Start:  umath.XY[float64]{X: 0, Y: 0},
 				Widths: []float64{10},
 				Ys:     []float64{5},
 				Modes:  []ust.PitchBendMode{ust.PitchBendModeJump},
 			},
 			expected: 11,
-			check: func(t *testing.T, curve plotter.XYs) {
+			check: func(t *testing.T, curve []umath.XY[float64]) {
 				assert.Equal(t, 0.0, curve[0].Y)
 				assert.Equal(t, 5.0, curve[1].Y)
 			},
@@ -132,28 +132,28 @@ func TestPitchBend_Curve(t *testing.T) {
 		{
 			name: "SineSegment",
 			pb: &ust.PitchBend{
-				Start:  plotter.XY{X: 0, Y: 0},
+				Start:  umath.XY[float64]{X: 0, Y: 0},
 				Widths: []float64{10},
 				Ys:     []float64{10},
 				Modes:  []ust.PitchBendMode{ust.PitchBendModeSine},
 			},
 			expected: 11,
-			check: func(t *testing.T, curve plotter.XYs) {
+			check: func(t *testing.T, curve []umath.XY[float64]) {
 				assert.Greater(t, curve[5].Y, 4.0)
 			},
 		},
 		{
 			name: "DefaultSegment",
 			pb: &ust.PitchBend{
-				Start:  plotter.XY{X: 0, Y: 0},
+				Start:  umath.XY[float64]{X: 0, Y: 0},
 				Widths: []float64{10},
 				Ys:     []float64{10},
 				Modes:  []ust.PitchBendMode{},
 			},
 			expected: 11,
-			check: func(t *testing.T, curve plotter.XYs) {
-				assert.Equal(t, plotter.XY{X: 0, Y: 0}, curve[0])
-				assert.Equal(t, plotter.XY{X: 10, Y: 10}, curve[len(curve)-1])
+			check: func(t *testing.T, curve []umath.XY[float64]) {
+				assert.Equal(t, umath.XY[float64]{X: 0, Y: 0}, curve[0])
+				assert.Equal(t, umath.XY[float64]{X: 10, Y: 10}, curve[len(curve)-1])
 			},
 		},
 	}
@@ -169,7 +169,7 @@ func TestPitchBend_Curve(t *testing.T) {
 
 func BenchmarkPitchBend_Curve(b *testing.B) {
 	pb := &ust.PitchBend{
-		Start:  plotter.XY{X: 0, Y: 0},
+		Start:  umath.XY[float64]{X: 0, Y: 0},
 		Widths: make([]float64, 100),
 		Ys:     make([]float64, 100),
 		Modes:  make([]ust.PitchBendMode, 100),

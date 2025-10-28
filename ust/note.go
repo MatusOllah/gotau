@@ -19,6 +19,8 @@ type Note struct {
 	PitchBend    *PitchBend // PitchBend is the pitch bend data.
 }
 
+//TODO: flags and vibrato???
+
 // IsLyricRest checks whether the lyrics is a rest / pause (e.g. "-", "R").
 func IsLyricRest(s string) bool {
 	return s == "-" || s == "R"

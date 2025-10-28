@@ -5,10 +5,10 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/MatusOllah/gotau/umath"
 	"github.com/MatusOllah/gotau/ust"
 	"github.com/stretchr/testify/assert"
 	"gitlab.com/gomidi/midi/v2"
-	"gonum.org/v1/plot/plotter"
 )
 
 func TestDecode(t *testing.T) {
@@ -47,7 +47,7 @@ func TestDecode(t *testing.T) {
 						Envelope:     &ust.Envelope{5, 35, 0, 100, 100, 0, 0, nil},
 						PitchBend: &ust.PitchBend{
 							Type:   5,
-							Start:  plotter.XY{-40, 0},
+							Start:  umath.XY[float64]{-40, 0},
 							Widths: []float64{65, 69},
 							Ys:     []float64{0, 42},
 							Modes:  []ust.PitchBendMode{ust.PitchBendModeLinear, ust.PitchBendModeSine},
@@ -103,7 +103,7 @@ func TestDecode(t *testing.T) {
 						Modulation: 0,
 						PitchBend: &ust.PitchBend{
 							Type:   5,
-							Start:  plotter.XY{-40, 0},
+							Start:  umath.XY[float64]{-40, 0},
 							Widths: []float64{65},
 							Ys:     []float64{0},
 							Modes:  nil,
@@ -133,7 +133,7 @@ func TestDecode(t *testing.T) {
 						Modulation: 0,
 						PitchBend: &ust.PitchBend{
 							Type:   5,
-							Start:  plotter.XY{-40, 0},
+							Start:  umath.XY[float64]{-40, 0},
 							Widths: []float64{65},
 							Ys:     []float64{0},
 							Modes:  nil,
