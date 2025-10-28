@@ -7,6 +7,7 @@ require (
 	github.com/go-ini/ini v1.67.0
 	github.com/stretchr/testify v1.10.0
 	gitlab.com/gomidi/midi/v2 v2.3.6
+	golang.org/x/net v0.0.0-20201021035429-f5854403a974
 	gonum.org/v1/plot v0.16.0
 )
 

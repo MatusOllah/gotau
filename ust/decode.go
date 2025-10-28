@@ -1,26 +1,61 @@
 package ust
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"log/slog"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/go-ini/ini"
 	"gitlab.com/gomidi/midi/v2"
+	"golang.org/x/net/html/charset"
 )
 
 var noteRe *regexp.Regexp = regexp.MustCompile(`#\d+`)
 
 // Decode decodes a UST file.
 func Decode(r io.Reader) (file *File, err error) {
-	file = &File{}
+	// detect encoding, step 1: sniff
+	const sniffLen = 256
+	buf := make([]byte, sniffLen)
+	n, err := r.Read(buf)
+	if err != nil && err != io.EOF {
+		return nil, fmt.Errorf("failed to read UST file for encoding detection: %w", err)
+	}
 
+	// step 2: find charset in the sniff
+	_charset := "shift_jis" // default
+	for line := range strings.SplitSeq(string(buf[:n]), "\n") {
+		if strings.Contains(line, "Charset=") {
+			parts := strings.SplitN(line, "=", 2)
+			if len(parts) == 2 {
+				_charset = strings.TrimSpace(parts[1])
+			}
+			break
+		}
+	}
+
+	concatReader := io.MultiReader(bytes.NewReader(buf[:n]), r)
+
+	// step 3: transcode to UTF-8
+	newReader := concatReader
+	lc := strings.ToLower(strings.TrimSpace(_charset))
+	if lc != "" && lc != "utf-8" && lc != "utf8" {
+		dec, err := charset.NewReaderLabel(lc, concatReader)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create decoder for charset %s: %w", strconv.Quote(_charset), err)
+		}
+		newReader = dec
+	}
+
+	file = &File{}
 	loadopts := ini.LoadOptions{
 		UnparseableSections: []string{"#VERSION"},
 	}
-	file.iniFile, err = ini.LoadSources(loadopts, r)
+	file.iniFile, err = ini.LoadSources(loadopts, newReader)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse INI: %w", err)
 	}

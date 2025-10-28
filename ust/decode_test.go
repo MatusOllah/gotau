@@ -83,7 +83,37 @@ func TestDecode(t *testing.T) {
 			expectErr: false,
 		},
 		{
-			name: "OpenUtau",
+			name: "OpenUtau_UTF-8",
+			expectedFile: &ust.File{
+				Version: ust.Version1_2,
+				Settings: ust.Settings{
+					Tempo:    120,
+					Project:  "C:\\Users\\matus\\Desktop\\test.ust",
+					VoiceDir: "C:\\Users\\matus\\Documents\\OpenUtau\\Singers\\重音テト OU用日本語統合ライブラリー",
+					CacheDir: "C:\\Users\\matus\\Documents\\OpenUtau\\Cache",
+					Mode2:    true,
+				},
+				Notes: []ust.Note{
+					{
+						Length:     720,
+						Lyric:      "a",
+						NoteNum:    midi.Note(69),
+						Velocity:   float64Ptr(100),
+						Intensity:  100,
+						Modulation: 0,
+						PitchBend: &ust.PitchBend{
+							Type:   5,
+							Start:  plotter.XY{-40, 0},
+							Widths: []float64{65},
+							Ys:     []float64{0},
+							Modes:  nil,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "OpenUtau_ShiftJIS",
 			expectedFile: &ust.File{
 				Version: ust.Version1_2,
 				Settings: ust.Settings{
