@@ -47,7 +47,11 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	defer zr.Close()
+	defer func() {
+		if err := zr.Close(); err != nil {
+			panic(err)
+		}
+	}()
 
 	vb, err := voicebank.Open(zr, voicebank.WithFileEncoding(japanese.ShiftJIS))
 	if err != nil {
