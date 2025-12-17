@@ -132,7 +132,7 @@ func DecodeOto(r io.Reader, opts ...OtoOption) (Oto, error) {
 			Overlap:      overlap,
 		})
 	}
-	return oto, nil
+	return oto, scan.Err()
 }
 
 // Get retrieves an [OtoEntry] by its phoneme alias.
