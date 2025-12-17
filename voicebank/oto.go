@@ -12,17 +12,15 @@ import (
 	"golang.org/x/text/transform"
 )
 
-//TODO: make these float32s
-
 // OtoEntry represents a single entry in an oto.ini file.
 type OtoEntry struct {
 	Filename     string
 	Alias        string
-	Offset       float64
-	Consonant    float64
-	Cutoff       float64
-	Preutterance float64
-	Overlap      float64
+	Offset       float32
+	Consonant    float32
+	Cutoff       float32
+	Preutterance float32
+	Overlap      float32
 }
 
 // Why does oto.ini and Oto (the audio thingie) have to have the same name...?! 😭
@@ -94,27 +92,27 @@ func DecodeOto(r io.Reader, opts ...OtoOption) (Oto, error) {
 
 		alias := values[0]
 
-		offset, err := strconv.ParseFloat(values[1], 64)
+		offset, err := strconv.ParseFloat(values[1], 32)
 		if err != nil {
 			return oto, fmt.Errorf("failed to parse offset value for %s: %w", strconv.Quote(filename), err)
 		}
 
-		consonant, err := strconv.ParseFloat(values[2], 64)
+		consonant, err := strconv.ParseFloat(values[2], 32)
 		if err != nil {
 			return oto, fmt.Errorf("failed to parse consonant value for %s: %w", strconv.Quote(filename), err)
 		}
 
-		cutoff, err := strconv.ParseFloat(values[3], 64)
+		cutoff, err := strconv.ParseFloat(values[3], 32)
 		if err != nil {
 			return oto, fmt.Errorf("failed to parse cutoff value for %s: %w", strconv.Quote(filename), err)
 		}
 
-		preutter, err := strconv.ParseFloat(values[4], 64)
+		preutter, err := strconv.ParseFloat(values[4], 32)
 		if err != nil {
 			return oto, fmt.Errorf("failed to parse preutterance value for %s: %w", strconv.Quote(filename), err)
 		}
 
-		overlap, err := strconv.ParseFloat(values[5], 64)
+		overlap, err := strconv.ParseFloat(values[5], 32)
 		if err != nil {
 			return oto, fmt.Errorf("failed to parse overlap value for %s: %w", strconv.Quote(filename), err)
 		}
@@ -122,11 +120,11 @@ func DecodeOto(r io.Reader, opts ...OtoOption) (Oto, error) {
 		oto = append(oto, OtoEntry{
 			Filename:     filename,
 			Alias:        alias,
-			Offset:       offset,
-			Consonant:    consonant,
-			Cutoff:       cutoff,
-			Preutterance: preutter,
-			Overlap:      overlap,
+			Offset:       float32(offset),
+			Consonant:    float32(consonant),
+			Cutoff:       float32(cutoff),
+			Preutterance: float32(preutter),
+			Overlap:      float32(overlap),
 		})
 	}
 	return oto, scan.Err()
