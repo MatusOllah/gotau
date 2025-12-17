@@ -1,16 +1,18 @@
 package voicebank
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"slices"
 	"strconv"
 	"strings"
 
-	"github.com/go-ini/ini"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/transform"
 )
+
+//TODO: make these float32s
 
 // OtoEntry represents a single entry in an oto.ini file.
 type OtoEntry struct {
@@ -22,6 +24,11 @@ type OtoEntry struct {
 	Preutterance float64
 	Overlap      float64
 }
+
+// Why does oto.ini and Oto (the audio thingie) have to have the same name...?! 😭
+// It makes things so confusing...
+//
+// ... anyway...
 
 // Oto (not to be confused with the [audio playback library]) represents
 // the oto.ini configuration in an UTAU voicebank.
@@ -39,7 +46,7 @@ type otoConfig struct {
 // OtoOption represents an option for passing into oto.ini-related functions and methods.
 type OtoOption func(*otoConfig)
 
-// OtoWithEncoding specifies the character encoding to use when decoding or encoding the oto.ini file.
+// OtoWithEncoding specifies the character encoding to use when reading or writing the oto.ini file.
 func OtoWithEncoding(encoding encoding.Encoding) OtoOption {
 	return func(cfg *otoConfig) {
 		cfg.encoding = encoding
@@ -50,11 +57,11 @@ func OtoWithEncoding(encoding encoding.Encoding) OtoOption {
 // to use when encoding float values in the oto.ini file.
 func OtoWithFloatFormat(width, precision int) OtoOption {
 	if width < 0 {
-		panic("oto: float width cannot be negative")
+		panic("float width cannot be negative")
 	}
 
 	if precision < 0 {
-		panic("oto: float precision cannot be negative")
+		panic("float precision cannot be negative")
 	}
 
 	return func(cfg *otoConfig) {
@@ -73,21 +80,17 @@ func DecodeOto(r io.Reader, opts ...OtoOption) (Oto, error) {
 		opt(cfg)
 	}
 
-	newReader := transform.NewReader(r, cfg.encoding.NewDecoder())
-
-	iniFile, err := ini.Load(newReader)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse ini: %w", err)
-	}
+	scan := bufio.NewScanner(transform.NewReader(r, cfg.encoding.NewDecoder()))
 
 	var oto Oto
-	sec := iniFile.Sections()[0]
-	for _, key := range sec.Keys() {
+	for scan.Scan() {
+		line := scan.Text()
+		parts := strings.SplitN(line, "=", 2)
+		filename := parts[0]
+		values := strings.Split(parts[1], ",")
+
 		// filename=alias,offset,consonant,cutoff,preutter,overlap
 		// filename and alias are strings, the rest are floats
-
-		filename := key.Name()
-		values := strings.Split(key.Value(), ",")
 		if len(values) != 6 {
 			return oto, fmt.Errorf("invalid oto entry for %s, expected 6 values, got %d", strconv.Quote(filename), len(values))
 		}
