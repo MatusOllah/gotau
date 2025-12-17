@@ -30,11 +30,8 @@ type OtoEntry struct {
 //
 // ... anyway...
 
-// Oto (not to be confused with the [audio playback library]) represents
-// the oto.ini configuration in an UTAU voicebank.
+// Oto represents the oto.ini configuration in an UTAU voicebank.
 // It holds a list of phonemes, aliases, and their associated parameters.
-//
-// [audio playback library]: https://github.com/ebitengine/oto
 type Oto []OtoEntry
 
 type otoConfig struct {
