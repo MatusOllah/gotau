@@ -2,10 +2,20 @@
 package voicebank
 
 import (
+	"bufio"
 	"fmt"
+	"image"
 	"io/fs"
+	"strings"
 
+	_ "image/png"
+
+	"github.com/MatusOllah/resona/codec"
+	_ "github.com/MatusOllah/resona/codec/au"
+	_ "github.com/MatusOllah/resona/codec/qoa"
+	_ "github.com/MatusOllah/resona/codec/wav"
 	"github.com/go-ini/ini"
+	_ "golang.org/x/image/bmp"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/transform"
 )
@@ -17,6 +27,27 @@ type InstallInfo struct {
 	Description string
 }
 
+type CharacterImage struct {
+	Path   string
+	Image  image.Image
+	Format string
+}
+
+type CharacterSample struct {
+	Path   string
+	Sample codec.Decoder
+	Format string
+}
+
+type CharacterInfo struct {
+	Name    string
+	Author  string
+	Website string
+	Image   *CharacterImage
+	Sample  *CharacterSample
+	Extra   string
+}
+
 // Voicebank represents an UTAU voicebank.
 type Voicebank struct {
 	// Oto is the voicebank's oto.ini configuration.
@@ -25,10 +56,15 @@ type Voicebank struct {
 	// InstallInfo is the voicebank's install information.
 	// It is only valid if the voicebank is an installer voicebank.
 	InstallInfo *InstallInfo
+
+	// CharacterInfo is the voicebank's character information.
+	// It is only valid if the character.txt file is present.
+	CharacterInfo *CharacterInfo
 }
 
 type voicebankConfig struct {
 	fileEncoding encoding.Encoding
+	decodeAssets bool
 }
 
 // using a "universal" Option type here instead of something like OpenOption just in case
@@ -39,10 +75,17 @@ type voicebankConfig struct {
 // Option represents an option for passing into voicebank-related functions and methods.
 type Option func(*voicebankConfig)
 
-// WithFileEncoding specifies the character encoding to use when reading or writing voicebank files.
+// WithFileEncoding specifies the character encoding to use when reading or writing voicebanks.
 func WithFileEncoding(encoding encoding.Encoding) Option {
 	return func(cfg *voicebankConfig) {
 		cfg.fileEncoding = encoding
+	}
+}
+
+// WithDecodeAssets specifies whether to automatically decode assets (e.g. audio, images) when reading voicebanks.
+func WithDecodeAssets(decodeAssets bool) Option {
+	return func(cfg *voicebankConfig) {
+		cfg.decodeAssets = decodeAssets
 	}
 }
 
@@ -50,6 +93,7 @@ func WithFileEncoding(encoding encoding.Encoding) Option {
 func Open(fsys fs.FS, opts ...Option) (*Voicebank, error) {
 	cfg := &voicebankConfig{
 		fileEncoding: encoding.Nop,
+		decodeAssets: true,
 	}
 
 	for _, opt := range opts {
@@ -79,8 +123,19 @@ func Open(fsys fs.FS, opts ...Option) (*Voicebank, error) {
 }
 
 func openNonInstaller(fsys fs.FS, cfg *voicebankConfig) (*Voicebank, error) {
-	//TODO: this
-	return &Voicebank{}, nil
+	vb := &Voicebank{}
+
+	if fileExists(fsys, "character.txt") {
+		charInfo, err := parseCharacterInfo(fsys, cfg)
+		if err != nil {
+			return nil, fmt.Errorf("voicebank: failed to parse character.txt: %w", err)
+		}
+		vb.CharacterInfo = charInfo
+	}
+
+	//TODO: parse README, parse oto.ini, parse prefix.map, + maybe some other stuff
+
+	return vb, nil
 }
 
 func parseInstallInfo(fsys fs.FS, enc encoding.Encoding) (*InstallInfo, error) {
@@ -104,6 +159,91 @@ func parseInstallInfo(fsys fs.FS, enc encoding.Encoding) (*InstallInfo, error) {
 		Description: iniFile.Section("DEFAULT").Key("description").String(),
 	}, nil
 }
+
+func parseCharacterInfo(fsys fs.FS, cfg *voicebankConfig) (*CharacterInfo, error) {
+	f, err := fsys.Open("character.txt")
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	scan := bufio.NewScanner(transform.NewReader(f, cfg.fileEncoding.NewDecoder()))
+
+	info := &CharacterInfo{}
+
+	for scan.Scan() {
+		// valid values: name, author, web, image, sample
+		// the rest is gonna be put in Extra
+		line := scan.Text()
+		if strings.Count(line, "=") == 1 {
+			parts := strings.SplitN(line, "=", 2)
+			key := parts[0]
+			value := parts[1]
+			switch key {
+			case "name":
+				info.Name = value
+			case "author":
+				info.Author = value
+			case "web":
+				info.Website = value
+			case "image":
+				info.Image = &CharacterImage{}
+				value = strings.ReplaceAll(value, "\\", "/")
+				info.Image.Path = value
+				if cfg.decodeAssets {
+					img, format, err := getCharacterImage(fsys, value)
+					if err != nil {
+						return nil, fmt.Errorf("failed to decode character image: %w", err)
+					}
+					info.Image.Image = img
+					info.Image.Format = format
+				}
+			case "sample":
+				info.Sample = &CharacterSample{}
+				value = strings.ReplaceAll(value, "\\", "/")
+				info.Sample.Path = value
+				/*
+					if cfg.decodeAssets {
+						sample, format, err := getCharacterSample(fsys, value)
+						if err != nil {
+							return nil, fmt.Errorf("failed to decode character sample: %w", err)
+						}
+						info.Sample = sample
+						info.SampleFormat = format
+					}
+				*/
+			}
+		} else {
+			info.Extra += line + "\n"
+		}
+
+	}
+	if err := scan.Err(); err != nil {
+		return nil, err
+	}
+	return info, nil
+}
+
+func getCharacterImage(fsys fs.FS, value string) (image.Image, string, error) {
+	f, err := fsys.Open(value)
+	if err != nil {
+		return nil, "", err
+	}
+	defer f.Close()
+
+	return image.Decode(f)
+}
+
+/*
+func getCharacterSample(fsys fs.FS, value string) (codec.Decoder, string, error) {
+	b, err := fs.ReadFile(fsys, value)
+	if err != nil {
+		return nil, "", err
+	}
+
+	return codec.Decode(bytes.NewReader(b))
+}
+*/
 
 func fileExists(fsys fs.FS, name string) bool {
 	_, err := fs.Stat(fsys, name)

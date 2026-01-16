@@ -1,8 +1,10 @@
 package main
 
 import (
-	"archive/zip"
+	"fmt"
 	"os"
+
+	"github.com/MatusOllah/enczip/zip"
 
 	"github.com/MatusOllah/gotau/voicebank"
 	"github.com/davecgh/go-spew/spew"
@@ -43,7 +45,7 @@ func main() {
 			fmt.Printf("f: %+v\n", f)
 	*/
 
-	zr, err := zip.OpenReader(os.Args[1])
+	zr, err := zip.OpenReader(os.Args[1], japanese.ShiftJIS)
 	if err != nil {
 		panic(err)
 	}
@@ -60,4 +62,21 @@ func main() {
 
 	spew.Dump(vb)
 
+	fmt.Println()
+
+	// render image
+	if vb.CharacterInfo.Image != nil {
+		width := vb.CharacterInfo.Image.Image.Bounds().Dx()
+		height := vb.CharacterInfo.Image.Image.Bounds().Dy()
+		img := vb.CharacterInfo.Image.Image
+		buf := make([]byte, 0, height*(width+1))
+		for y := 0; y < height; y++ {
+			for x := 0; x < width; x++ {
+				r, g, b, _ := img.At(x, y).RGBA()
+				buf = append(buf, fmt.Appendf(nil, "\033[48;2;%d;%d;%dm \033[0m", uint8(r>>8), uint8(g>>8), uint8(b>>8))...)
+			}
+			buf = append(buf, '\n')
+		}
+		os.Stdout.Write(buf)
+	}
 }
