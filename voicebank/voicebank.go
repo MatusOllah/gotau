@@ -20,32 +20,80 @@ import (
 	"golang.org/x/text/transform"
 )
 
+// InstallInfo represents metadata about installer voicebanks (i.e. install.txt).
 type InstallInfo struct {
-	Type        string
-	Folder      string
+	// Type specifies the installer type (e.g. voiceset).
+	Type string
+
+	// Folder specifies the target directory where the voicebank will be installed,
+	// i.e., the folder name that will appear inside UTAU's `voice/` directory.
+	Folder string
+
+	// ContentsDir specifies the source directory where the actual voicebank files are located.
 	ContentsDir string
+
+	// Description is a human-readable description or name of the voicebank.
+	// This is shown in classic UTAU's installer dialog. Optional.
 	Description string
 }
 
+// CharacterImage represents a character profile image referenced by character.txt.
 type CharacterImage struct {
-	Path   string
-	Image  image.Image
+	// Path is the filesystem path to the image file.
+	Path string
+
+	// Image is the decoded image. It may be nil.
+	// It gets populated by a call to [CharacterImage.Decode] or
+	// by [Open] if asset decoding is enabled.
+	Image image.Image
+
+	// Format is the detected image format (e.g. png). It may be nil.
+	// It gets populated by a call to [CharacterImage.Decode] or
+	// by [Open] if asset decoding is enabled.
 	Format string
+
+	fsys fs.FS
 }
 
+// CharacterSample represents a character sample audio referenced by character.txt.
 type CharacterSample struct {
-	Path   string
+	// Path is the filesystem path to the sample audio file.
+	Path string
+
+	// Sample is the decoded sample audio. It may be nil.
+	// It gets populated by a call to [CharacterSample.Decode] or
+	// by [Open] if asset decoding is enabled.
 	Sample codec.Decoder
+
+	// Format is the detected sample audio format (e.g. wav). It may be nil.
+	// It gets populated by a call to [CharacterSample.Decode] or
+	// by [Open] if asset decoding is enabled.
 	Format string
+
+	fsys fs.FS
 }
 
+// CharacterInfo represents metadata about the voicebank character (i.e. character.txt).
 type CharacterInfo struct {
-	Name    string
-	Author  string
+	// Name is the character's name.
+	Name string
+
+	// Author is the creator or voice actor of the voicebank or character.
+	Author string
+
+	// Website is a website URL associated with the character. Optional.
 	Website string
-	Image   *CharacterImage
-	Sample  *CharacterSample
-	Extra   string
+
+	// Image is the character's profile image. It is only valid
+	// if the image field in the character.txt file is present.
+	Image *CharacterImage
+
+	// Sample is the character's sample audio. It is only valid
+	// if the sample field in the character.txt file is present.
+	Sample *CharacterSample
+
+	// Extra contains unrecognized or unsupported lines from character.txt.
+	Extra string
 }
 
 // Voicebank represents an UTAU voicebank.

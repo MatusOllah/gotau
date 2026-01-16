@@ -55,17 +55,16 @@ func main() {
 		}
 	}()
 
-	vb, err := voicebank.Open(zr, voicebank.WithFileEncoding(japanese.ShiftJIS))
+	vb, err := voicebank.Open(zr, voicebank.WithFileEncoding(japanese.ShiftJIS), voicebank.WithDecodeAssets(false))
 	if err != nil {
 		panic(err)
 	}
 
 	spew.Dump(vb)
 
-	fmt.Println()
-
 	// render image
-	if vb.CharacterInfo.Image != nil {
+	if vb.CharacterInfo.Image.Image != nil {
+		fmt.Println()
 		width := vb.CharacterInfo.Image.Image.Bounds().Dx()
 		height := vb.CharacterInfo.Image.Image.Bounds().Dy()
 		img := vb.CharacterInfo.Image.Image
