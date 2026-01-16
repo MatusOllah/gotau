@@ -55,7 +55,7 @@ func main() {
 		}
 	}()
 
-	vb, err := voicebank.Open(zr, voicebank.WithFileEncoding(japanese.ShiftJIS), voicebank.WithDecodeAssets(false))
+	vb, err := voicebank.Open(zr, voicebank.WithFileEncoding(japanese.ShiftJIS), voicebank.WithDecodeAssets(true))
 	if err != nil {
 		panic(err)
 	}

@@ -51,8 +51,34 @@ type CharacterImage struct {
 	// It gets populated by a call to [CharacterImage.Decode] or
 	// by [Open] if asset decoding is enabled.
 	Format string
+}
 
-	fsys fs.FS
+// Decode reads and decodes the profile image file.
+//
+// By default, Decode supports PNG and BMP images. Additional image codecs must
+// be imported separately. For example, to load a JPEG image, it suffices to have
+//
+//	import _ "image/jpeg"
+//
+// either in the program's package or somewhere in the import section.
+//
+// Returns an error if the file cannot be opened or decoded with the available decoders.
+func (i *CharacterImage) Decode(fsys fs.FS) error {
+	f, err := fsys.Open(i.Path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	img, format, err := image.Decode(f)
+	if err != nil {
+		return err
+	}
+
+	i.Image = img
+	i.Format = format
+
+	return nil
 }
 
 // CharacterSample represents a character sample audio referenced by character.txt.
@@ -69,8 +95,37 @@ type CharacterSample struct {
 	// It gets populated by a call to [CharacterSample.Decode] or
 	// by [Open] if asset decoding is enabled.
 	Format string
+}
 
-	fsys fs.FS
+// Decode reads and decodes the sample audio file.
+//
+// By default, Decode supports AU, WAV, and QOA files and uses [Resona]
+// for decoding audio files. Additional audio codecs must
+// be imported separately. For example, to load a MP3 file, it suffices to have
+//
+//	import _ "github.com/MatusOllah/resona/codec/mp3"
+//
+// either in the program's package or somewhere in the import section.
+//
+// Returns an error if the file cannot be opened or decoded with the available codecs.
+//
+// [Resona]: https://github.com/MatusOllah/resona
+func (s *CharacterSample) Decode(fsys fs.FS) error {
+	f, err := fsys.Open(s.Path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	dec, format, err := codec.Decode(f)
+	if err != nil {
+		return err
+	}
+
+	s.Sample = dec
+	s.Format = format
+
+	return nil
 }
 
 // CharacterInfo represents metadata about the voicebank character (i.e. character.txt).
@@ -239,12 +294,9 @@ func parseCharacterInfo(fsys fs.FS, cfg *voicebankConfig) (*CharacterInfo, error
 				value = strings.ReplaceAll(value, "\\", "/")
 				info.Image.Path = value
 				if cfg.decodeAssets {
-					img, format, err := getCharacterImage(fsys, value)
-					if err != nil {
+					if err := info.Image.Decode(fsys); err != nil {
 						return nil, fmt.Errorf("failed to decode character image: %w", err)
 					}
-					info.Image.Image = img
-					info.Image.Format = format
 				}
 			case "sample":
 				info.Sample = &CharacterSample{}
@@ -252,12 +304,9 @@ func parseCharacterInfo(fsys fs.FS, cfg *voicebankConfig) (*CharacterInfo, error
 				info.Sample.Path = value
 				/*
 					if cfg.decodeAssets {
-						sample, format, err := getCharacterSample(fsys, value)
-						if err != nil {
-							return nil, fmt.Errorf("failed to decode character sample: %w", err)
+						if err := info.Sample.Decode(fsys); err != nil {
+							return nil, fmt.Errorf("failed to decode character sample audio: %w", err)
 						}
-						info.Sample = sample
-						info.SampleFormat = format
 					}
 				*/
 			}
@@ -271,27 +320,6 @@ func parseCharacterInfo(fsys fs.FS, cfg *voicebankConfig) (*CharacterInfo, error
 	}
 	return info, nil
 }
-
-func getCharacterImage(fsys fs.FS, value string) (image.Image, string, error) {
-	f, err := fsys.Open(value)
-	if err != nil {
-		return nil, "", err
-	}
-	defer f.Close()
-
-	return image.Decode(f)
-}
-
-/*
-func getCharacterSample(fsys fs.FS, value string) (codec.Decoder, string, error) {
-	b, err := fs.ReadFile(fsys, value)
-	if err != nil {
-		return nil, "", err
-	}
-
-	return codec.Decode(bytes.NewReader(b))
-}
-*/
 
 func fileExists(fsys fs.FS, name string) bool {
 	_, err := fs.Stat(fsys, name)
