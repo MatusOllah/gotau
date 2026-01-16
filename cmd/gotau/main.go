@@ -77,6 +77,9 @@ func main() {
 			}
 			buf = append(buf, '\n')
 		}
-		os.Stdout.Write(buf)
+		_, err := os.Stdout.Write(buf)
+		if err != nil {
+			panic(err)
+		}
 	}
 }
