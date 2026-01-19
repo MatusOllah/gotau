@@ -168,6 +168,7 @@ type Voicebank struct {
 type voicebankConfig struct {
 	fileEncoding encoding.Encoding
 	decodeAssets bool
+	strict       bool
 }
 
 // using a "universal" Option type here instead of something like OpenOption just in case
@@ -192,11 +193,19 @@ func WithDecodeAssets(decodeAssets bool) Option {
 	}
 }
 
+// WithStrict specifies whether to fail on non-fatal errors.
+func WithStrict(strict bool) Option {
+	return func(cfg *voicebankConfig) {
+		cfg.strict = strict
+	}
+}
+
 // Open opens an UTAU voicebank from the given filesystem.
 func Open(fsys fs.FS, opts ...Option) (*Voicebank, error) {
 	cfg := &voicebankConfig{
 		fileEncoding: encoding.Nop,
 		decodeAssets: true,
+		strict:       false,
 	}
 
 	for _, opt := range opts {
@@ -294,7 +303,7 @@ func parseCharacterInfo(fsys fs.FS, cfg *voicebankConfig) (*CharacterInfo, error
 				value = strings.ReplaceAll(value, "\\", "/")
 				info.Image.Path = value
 				if cfg.decodeAssets {
-					if err := info.Image.Decode(fsys); err != nil {
+					if err := info.Image.Decode(fsys); err != nil && cfg.strict {
 						return nil, fmt.Errorf("failed to decode character image: %w", err)
 					}
 				}
@@ -302,13 +311,11 @@ func parseCharacterInfo(fsys fs.FS, cfg *voicebankConfig) (*CharacterInfo, error
 				info.Sample = &CharacterSample{}
 				value = strings.ReplaceAll(value, "\\", "/")
 				info.Sample.Path = value
-				/*
-					if cfg.decodeAssets {
-						if err := info.Sample.Decode(fsys); err != nil {
-							return nil, fmt.Errorf("failed to decode character sample audio: %w", err)
-						}
+				if cfg.decodeAssets {
+					if err := info.Sample.Decode(fsys); err != nil && cfg.strict {
+						return nil, fmt.Errorf("failed to decode character sample audio: %w", err)
 					}
-				*/
+				}
 			}
 		} else {
 			info.Extra += line + "\n"
