@@ -47,7 +47,7 @@ type CharacterImage struct {
 	// by [Open] if asset decoding is enabled.
 	Image image.Image
 
-	// Format is the detected image format (e.g. png). It may be nil.
+	// Format is the detected image format (e.g. png). It may be empty.
 	// It gets populated by a call to [CharacterImage.Decode] or
 	// by [Open] if asset decoding is enabled.
 	Format string
@@ -91,7 +91,7 @@ type CharacterSample struct {
 	// by [Open] if asset decoding is enabled.
 	Sample codec.Decoder
 
-	// Format is the detected sample audio format (e.g. wav). It may be nil.
+	// Format is the detected sample audio format (e.g. wav). It may be empty.
 	// It gets populated by a call to [CharacterSample.Decode] or
 	// by [Open] if asset decoding is enabled.
 	Format string
@@ -136,7 +136,7 @@ type CharacterInfo struct {
 	// Author is the creator or voice actor of the voicebank or character.
 	Author string
 
-	// Website is a website URL associated with the character. Optional.
+	// Website is a website URL associated with the character.
 	Website string
 
 	// Image is the character's profile image. It is only valid
@@ -218,9 +218,9 @@ func Open(fsys fs.FS, opts ...Option) (*Voicebank, error) {
 			return nil, fmt.Errorf("voicebank: failed to parse install.txt: %w", err)
 		}
 
-		vbFsys, err := fs.Sub(fsys, info.Folder)
+		vbFsys, err := fs.Sub(fsys, info.ContentsDir)
 		if err != nil {
-			return nil, fmt.Errorf("voicebank: failed to access voicebank folder %q: %w", info.Folder, err)
+			return nil, fmt.Errorf("voicebank: failed to access voicebank directory %q: %w", info.ContentsDir, err)
 		}
 
 		vb, err := openNonInstaller(vbFsys, cfg)
