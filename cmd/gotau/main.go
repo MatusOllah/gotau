@@ -81,4 +81,9 @@ func main() {
 			panic(err)
 		}
 	}
+
+	fmt.Println()
+
+	// print readme
+	fmt.Println(vb.Readme)
 }

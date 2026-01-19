@@ -163,6 +163,10 @@ type Voicebank struct {
 	// CharacterInfo is the voicebank's character information.
 	// It is only valid if the character.txt file is present.
 	CharacterInfo *CharacterInfo
+
+	// Readme is the voicebank's readme document.
+	// It is only valid if a README file (or similar) is present.
+	Readme string
 }
 
 type voicebankConfig struct {
@@ -237,6 +241,7 @@ func Open(fsys fs.FS, opts ...Option) (*Voicebank, error) {
 func openNonInstaller(fsys fs.FS, cfg *voicebankConfig) (*Voicebank, error) {
 	vb := &Voicebank{}
 
+	// character.txt
 	if fileExists(fsys, "character.txt") {
 		charInfo, err := parseCharacterInfo(fsys, cfg)
 		if err != nil {
@@ -245,7 +250,33 @@ func openNonInstaller(fsys fs.FS, cfg *voicebankConfig) (*Voicebank, error) {
 		vb.CharacterInfo = charInfo
 	}
 
-	//TODO: parse README, parse oto.ini, parse prefix.map, + maybe some other stuff
+	// README
+	err := fs.WalkDir(fsys, ".", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil // do nothing
+		}
+		if strings.Contains(strings.ToLower(d.Name()), "readme") {
+			readme, err := fs.ReadFile(fsys, path)
+			if err != nil {
+				return err
+			}
+			decoded, err := cfg.fileEncoding.NewDecoder().Bytes(readme)
+			if err != nil {
+				return err
+			}
+			vb.Readme = string(decoded)
+			return nil
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("voicebank: failed to access readme file: %w", err)
+	}
+
+	//TODO: parse oto.ini, parse prefix.map, + maybe some other stuff
 
 	return vb, nil
 }
