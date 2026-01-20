@@ -184,7 +184,7 @@ func (o Oto) Encode(w io.Writer, opts ...OtoOption) error {
 	for _, entry := range o {
 		// filename=alias,offset,consonant,cutoff,preutter,overlap
 		// filename and alias are strings, the rest are floats
-		fmtStr := "%s=%s,%W.Pf,%W.Pf,%W.Pf,%W.Pf,%W.Pf"
+		fmtStr := "%s=%s,%W.Pf,%W.Pf,%W.Pf,%W.Pf,%W.Pf\n"
 		fmtStr = strings.ReplaceAll(fmtStr, "W", strconv.Itoa(cfg.floatWidth))
 		fmtStr = strings.ReplaceAll(fmtStr, "P", strconv.Itoa(cfg.floatPercision))
 		_, err := fmt.Fprintf(newWriter, fmtStr,
