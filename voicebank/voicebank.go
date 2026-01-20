@@ -269,7 +269,7 @@ func openNonInstaller(fsys fs.FS, cfg *voicebankConfig) (*Voicebank, error) {
 				return err
 			}
 			vb.Readme = string(decoded)
-			return nil
+			return fs.SkipAll // stop after first readme found
 		}
 		return nil
 	})
