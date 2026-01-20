@@ -268,7 +268,7 @@ func openNonInstaller(fsys fs.FS, cfg *voicebankConfig) (*Voicebank, error) {
 			if err != nil {
 				return err
 			}
-			vb.Readme = string(decoded)
+			vb.Readme = normalizeCRLF(string(decoded))
 			return fs.SkipAll // stop after first readme found
 		}
 		return nil
@@ -403,4 +403,10 @@ func parseOtoIni(fsys fs.FS, path string, enc encoding.Encoding) (Oto, error) {
 func fileExists(fsys fs.FS, name string) bool {
 	_, err := fs.Stat(fsys, name)
 	return err == nil || !errors.Is(err, fs.ErrNotExist)
+}
+
+func normalizeCRLF(s string) string {
+	s = strings.ReplaceAll(s, "\r\n", "\n")
+	s = strings.ReplaceAll(s, "\r", "\n")
+	return s
 }
