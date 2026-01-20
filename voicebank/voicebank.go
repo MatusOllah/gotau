@@ -3,6 +3,7 @@ package voicebank
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"image"
 	"io/fs"
@@ -398,5 +399,5 @@ func parseOtoIni(fsys fs.FS, path string, enc encoding.Encoding) (Oto, error) {
 
 func fileExists(fsys fs.FS, name string) bool {
 	_, err := fs.Stat(fsys, name)
-	return err == nil
+	return err == nil || !errors.Is(err, fs.ErrNotExist)
 }
