@@ -14,13 +14,26 @@ import (
 
 // OtoEntry represents a single entry in an oto.ini file.
 type OtoEntry struct {
-	Filename     string
-	Alias        string
-	Offset       float32
-	Consonant    float32
-	Cutoff       float32
+	// Filename is the name of the audio file associated with this Oto entry.
+	Filename string
+
+	// Alias is the phoneme or alias associated with this Oto entry.
+	Alias string
+
+	// Offset is the offset time in milliseconds.
+	Offset float32
+
+	// Consonant is the consonant duration in milliseconds.
+	Consonant float32
+
+	// Cutoff is the cutoff time in milliseconds.
+	Cutoff float32
+
+	// Preutterance is the preutterance time in milliseconds.
 	Preutterance float32
-	Overlap      float32
+
+	// Overlap is the overlap time in milliseconds.
+	Overlap float32
 }
 
 // Why does oto.ini and Oto (the audio thingie) have to have the same name...?! 😭
