@@ -105,26 +105,41 @@ func DecodeOto(r io.Reader, opts ...OtoOption) (Oto, error) {
 
 		alias := values[0]
 
+		if values[1] == "" {
+			values[1] = "0"
+		}
 		offset, err := strconv.ParseFloat(values[1], 32)
 		if err != nil {
 			return oto, fmt.Errorf("failed to parse offset value for %s: %w", strconv.Quote(filename), err)
 		}
 
+		if values[2] == "" {
+			values[2] = "0"
+		}
 		consonant, err := strconv.ParseFloat(values[2], 32)
 		if err != nil {
 			return oto, fmt.Errorf("failed to parse consonant value for %s: %w", strconv.Quote(filename), err)
 		}
 
+		if values[3] == "" {
+			values[3] = "0"
+		}
 		cutoff, err := strconv.ParseFloat(values[3], 32)
 		if err != nil {
 			return oto, fmt.Errorf("failed to parse cutoff value for %s: %w", strconv.Quote(filename), err)
 		}
 
+		if values[4] == "" {
+			values[4] = "0"
+		}
 		preutter, err := strconv.ParseFloat(values[4], 32)
 		if err != nil {
 			return oto, fmt.Errorf("failed to parse preutterance value for %s: %w", strconv.Quote(filename), err)
 		}
 
+		if values[5] == "" {
+			values[5] = "0"
+		}
 		overlap, err := strconv.ParseFloat(values[5], 32)
 		if err != nil {
 			return oto, fmt.Errorf("failed to parse overlap value for %s: %w", strconv.Quote(filename), err)
