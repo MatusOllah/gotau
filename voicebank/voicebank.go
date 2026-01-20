@@ -153,9 +153,6 @@ type CharacterInfo struct {
 
 // Voicebank represents an UTAU voicebank.
 type Voicebank struct {
-	// Oto is the voicebank's oto.ini configuration.
-	Oto Oto
-
 	// InstallInfo is the voicebank's install information.
 	// It is only valid if the voicebank is an installer voicebank.
 	InstallInfo *InstallInfo
@@ -167,6 +164,9 @@ type Voicebank struct {
 	// Readme is the voicebank's readme document.
 	// It is only valid if a README file (or similar) is present.
 	Readme string
+
+	// Oto is the voicebank's oto.ini configuration.
+	Oto Oto
 }
 
 type voicebankConfig struct {
@@ -276,7 +276,29 @@ func openNonInstaller(fsys fs.FS, cfg *voicebankConfig) (*Voicebank, error) {
 		return nil, fmt.Errorf("voicebank: failed to access readme file: %w", err)
 	}
 
-	//TODO: parse oto.ini, parse prefix.map, + maybe some other stuff
+	// oto.ini
+	// parse all oto.ini files found
+	err = fs.WalkDir(fsys, ".", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil // do nothing
+		}
+		if strings.EqualFold(d.Name(), "oto.ini") {
+			oto, err := parseOtoIni(fsys, path, cfg.fileEncoding)
+			if err != nil {
+				return fmt.Errorf("failed to parse oto.ini file: %w", err)
+			}
+			vb.Oto = append(vb.Oto, oto...)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("voicebank: failed to access oto.ini files: %w", err)
+	}
+
+	//TODO: parse prefix.map, + maybe some other stuff
 
 	return vb, nil
 }
@@ -357,6 +379,21 @@ func parseCharacterInfo(fsys fs.FS, cfg *voicebankConfig) (*CharacterInfo, error
 		return nil, err
 	}
 	return info, nil
+}
+
+func parseOtoIni(fsys fs.FS, path string, enc encoding.Encoding) (Oto, error) {
+	f, err := fsys.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	oto, err := DecodeOto(f, OtoWithEncoding(enc))
+	if err != nil {
+		return nil, err
+	}
+
+	return oto, nil
 }
 
 func fileExists(fsys fs.FS, name string) bool {
