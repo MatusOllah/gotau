@@ -88,6 +88,9 @@ func DecodeOto(r io.Reader, opts ...OtoOption) (Oto, error) {
 		opt(cfg)
 	}
 
+	// we can't use ini package here because oto.ini contains
+	// duplicate keys (i.e. filenames) which ini would reject
+
 	scan := bufio.NewScanner(transform.NewReader(r, cfg.encoding.NewDecoder()))
 
 	var oto Oto

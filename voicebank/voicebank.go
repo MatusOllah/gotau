@@ -333,6 +333,9 @@ func parseCharacterInfo(fsys fs.FS, cfg *voicebankConfig) (*CharacterInfo, error
 	}
 	defer f.Close()
 
+	// we can't use ini package here because character.txt can contain
+	// arbitrary and malformed lines which ini would reject
+
 	scan := bufio.NewScanner(transform.NewReader(f, cfg.fileEncoding.NewDecoder()))
 
 	info := &CharacterInfo{}
