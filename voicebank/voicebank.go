@@ -168,6 +168,10 @@ type Voicebank struct {
 
 	// Oto is the voicebank's oto.ini configuration.
 	Oto Oto
+
+	// PrefixMap is the voicebank's prefix.map configuration.
+	// It is only valid if the prefix.map file is present.
+	PrefixMap PrefixMap
 }
 
 type voicebankConfig struct {
@@ -299,7 +303,21 @@ func openNonInstaller(fsys fs.FS, cfg *voicebankConfig) (*Voicebank, error) {
 		return nil, fmt.Errorf("voicebank: failed to access oto.ini files: %w", err)
 	}
 
-	//TODO: parse prefix.map, + maybe some other stuff
+	// prefix.map
+	if fileExists(fsys, "prefix.map") {
+		f, err := fsys.Open("prefix.map")
+		if err != nil {
+			return nil, fmt.Errorf("voicebank: failed to open prefix.map: %w", err)
+		}
+		defer f.Close()
+
+		pm, err := DecodePrefixMap(f, PrefixMapWithEncoding(cfg.fileEncoding))
+		if err != nil {
+			return nil, fmt.Errorf("voicebank: failed to parse prefix.map: %w", err)
+		}
+
+		vb.PrefixMap = pm
+	}
 
 	return vb, nil
 }

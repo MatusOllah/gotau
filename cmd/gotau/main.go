@@ -60,7 +60,7 @@ func main() {
 		panic(err)
 	}
 
-	spew.Dump(vb)
+	//spew.Dump(vb)
 
 	// render image
 	if vb.CharacterInfo.Image.Image != nil {
@@ -86,4 +86,9 @@ func main() {
 
 	// print readme
 	fmt.Println(vb.Readme)
+
+	// print prefix.map
+
+	fmt.Println()
+	spew.Dump(vb.PrefixMap)
 }
