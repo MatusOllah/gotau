@@ -16,6 +16,7 @@ import (
 	_ "github.com/MatusOllah/resona/codec/qoa"
 	_ "github.com/MatusOllah/resona/codec/wav"
 	"github.com/go-ini/ini"
+	"gitlab.com/gomidi/midi/v2"
 	_ "golang.org/x/image/bmp"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/transform"
@@ -427,4 +428,45 @@ func normalizeCRLF(s string) string {
 	s = strings.ReplaceAll(s, "\r\n", "\n")
 	s = strings.ReplaceAll(s, "\r", "\n")
 	return s
+}
+
+//TODO: support VCV (prev lyric), presamp.ini, maybe also a custom lyric resolve text/template thingie
+
+// Lookup looks up an [OtoEntry] for the given lyric and MIDI note.
+//
+// It returns the first matching entry found based on the following order:
+//
+//  1. prefix.map combo (if prefix.map is present)
+//  2. raw lyric
+//  3. whitespace trimmed lyric
+//
+// If no matching entry is found, it returns an empty [OtoEntry] and false.
+func (vb *Voicebank) Lookup(lyric string, note midi.Note) (_ OtoEntry, ok bool) {
+	combos := vb.getAliasCombos(lyric, note)
+
+	for _, combo := range combos {
+		if entry, ok := vb.Oto.Get(combo); ok {
+			return entry, true
+		}
+	}
+	return OtoEntry{}, false
+}
+
+func (vb *Voicebank) getAliasCombos(lyric string, note midi.Note) []string {
+	var combos []string
+
+	// prefix.map combo
+	if vb.PrefixMap != nil {
+		if entry, ok := vb.PrefixMap[note]; ok {
+			combos = append(combos, entry.Prefix+lyric+entry.Suffix)
+		}
+	}
+
+	// raw lyric
+	combos = append(combos, lyric)
+
+	// trimmed lyric
+	combos = append(combos, strings.TrimSpace(lyric))
+
+	return combos
 }
