@@ -430,9 +430,14 @@ func normalizeCRLF(s string) string {
 	return s
 }
 
+type LookupConfig struct {
+	Lyric string
+	Note  midi.Note
+}
+
 //TODO: support VCV (prev lyric), presamp.ini, maybe also a custom lyric resolve text/template thingie
 
-// Lookup looks up an [OtoEntry] for the given lyric and MIDI note.
+// Lookup looks up an [OtoEntry] for the given [LookupConfig].
 //
 // It returns the first matching entry found based on the following order:
 //
@@ -441,8 +446,8 @@ func normalizeCRLF(s string) string {
 //  3. whitespace trimmed lyric
 //
 // If no matching entry is found, it returns an empty [OtoEntry] and false.
-func (vb *Voicebank) Lookup(lyric string, note midi.Note) (_ OtoEntry, ok bool) {
-	combos := vb.getAliasCombos(lyric, note)
+func (vb *Voicebank) Lookup(cfg LookupConfig) (_ OtoEntry, ok bool) {
+	combos := vb.getAliasCombos(cfg)
 
 	for _, combo := range combos {
 		if entry, ok := vb.Oto.Get(combo); ok {
@@ -452,21 +457,33 @@ func (vb *Voicebank) Lookup(lyric string, note midi.Note) (_ OtoEntry, ok bool) 
 	return OtoEntry{}, false
 }
 
-func (vb *Voicebank) getAliasCombos(lyric string, note midi.Note) []string {
+func (vb *Voicebank) getAliasCombos(cfg LookupConfig) []string {
 	var combos []string
 
 	// prefix.map combo
 	if vb.PrefixMap != nil {
-		if entry, ok := vb.PrefixMap[note]; ok {
-			combos = append(combos, entry.Prefix+lyric+entry.Suffix)
+		if entry, ok := vb.PrefixMap[cfg.Note]; ok {
+			combos = append(combos, entry.Prefix+cfg.Lyric+entry.Suffix)
 		}
 	}
 
 	// raw lyric
-	combos = append(combos, lyric)
+	combos = append(combos, cfg.Lyric)
 
 	// trimmed lyric
-	combos = append(combos, strings.TrimSpace(lyric))
+	combos = append(combos, strings.TrimSpace(cfg.Lyric))
 
-	return combos
+	return dedupeStrings(combos)
+}
+
+func dedupeStrings(s []string) []string {
+	allKeys := make(map[string]bool)
+	var new []string
+	for _, item := range s {
+		if _, ok := allKeys[item]; !ok {
+			allKeys[item] = true
+			new = append(new, item)
+		}
+	}
+	return new
 }
