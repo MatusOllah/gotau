@@ -3,7 +3,7 @@ package ust_test
 import (
 	"testing"
 
-	"github.com/MatusOllah/gotau/ust"
+	"github.com/MatusOllah/gotau/sequence/ust"
 	"github.com/stretchr/testify/assert"
 )
 

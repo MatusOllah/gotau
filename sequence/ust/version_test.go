@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/MatusOllah/gotau/ust"
+	"github.com/MatusOllah/gotau/sequence/ust"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -17,7 +17,7 @@ func TestParseVersion(t *testing.T) {
 	}{
 		{name: "Version1_2", s: "UST Version1.2", expectedVer: ust.Version1_2, expectedError: nil},
 		{name: "Version2_0", s: "UST Version2.0", expectedVer: ust.Version2_0, expectedError: nil},
-		{name: "Invalid", s: "UST Version6.9", expectedVer: 0, expectedError: fmt.Errorf("invalid version string: UST Version6.9")},
+		{name: "Invalid", s: "UST Version3.9", expectedVer: 0, expectedError: fmt.Errorf("invalid version string: UST Version3.9")},
 	}
 
 	for _, test := range tests {

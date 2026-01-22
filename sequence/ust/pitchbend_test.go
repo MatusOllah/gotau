@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/MatusOllah/gotau/sequence/ust"
 	"github.com/MatusOllah/gotau/umath"
-	"github.com/MatusOllah/gotau/ust"
 	"github.com/stretchr/testify/assert"
 )
 
