@@ -430,22 +430,32 @@ func normalizeCRLF(s string) string {
 	return s
 }
 
+// LookupConfig represents the configuration for passing into [Voicebank.Lookup].
 type LookupConfig struct {
+	// Lyric is the main lyric.
 	Lyric string
-	Note  midi.Note
+
+	// PrevLyric is the previous lyric.
+	PrevLyric string
+
+	// Note is the MIDI note. It's used for prefix.map lookup.
+	Note midi.Note
 }
 
-//TODO: support VCV (prev lyric), presamp.ini, maybe also a custom lyric resolve text/template thingie
+//TODO: CVVC / VCCV, presamp.ini, maybe also a custom lyric resolve text/template thingie
 
 // Lookup looks up an [OtoEntry] for the given [LookupConfig].
 //
 // It returns the first matching entry found based on the following order:
 //
-//  1. prefix.map combo (if prefix.map is present)
-//  2. raw lyric
-//  3. whitespace trimmed lyric
+//  1. prefix.map combo with VCV prefix (if prefix.map and [LookupConfig.PrevLyric] are present)
+//  2. prefix.map combo (if prefix.map is present)
+//  3. raw lyric with VCV prefix (if [LookupConfig.PrevLyric] is present)
+//  4. raw lyric
+//  5. whitespace-trimmed lyric with VCV prefix (if [LookupConfig.PrevLyric] is present)
+//  6. whitespace-trimmed lyric
 //
-// If no matching entry is found, it returns an empty [OtoEntry] and false.
+// If no matching entry is found in the voicebank, it returns an empty [OtoEntry] and false.
 func (vb *Voicebank) Lookup(cfg LookupConfig) (_ OtoEntry, ok bool) {
 	combos := vb.getAliasCombos(cfg)
 
@@ -457,21 +467,55 @@ func (vb *Voicebank) Lookup(cfg LookupConfig) (_ OtoEntry, ok bool) {
 	return OtoEntry{}, false
 }
 
+func getLastVowel(lyric string) string {
+	var last string
+	for _, r := range lyric {
+		switch r {
+		case 'a', 'e', 'i', 'o', 'u',
+			'A', 'E', 'I', 'O', 'U',
+			'あ', 'え', 'い', 'お', 'う',
+			'ア', 'エ', 'イ', 'オ', 'ウ':
+			last = string(r)
+		}
+	}
+	return last
+}
+
 func (vb *Voicebank) getAliasCombos(cfg LookupConfig) []string {
 	var combos []string
 
-	// prefix.map combo
+	vowel := ""
+	if cfg.PrevLyric != "" {
+		vowel = getLastVowel(cfg.PrevLyric)
+	}
+
+	makeVCV := func() string {
+		if vowel != "" {
+			return vowel + " " + cfg.Lyric
+		}
+		return "- " + cfg.Lyric
+	}
+
+	// prefix.map
 	if vb.PrefixMap != nil {
 		if entry, ok := vb.PrefixMap[cfg.Note]; ok {
-			combos = append(combos, entry.Prefix+cfg.Lyric+entry.Suffix)
+			combos = append(combos, entry.Prefix+makeVCV()+entry.Suffix) // VCV
+			combos = append(combos, entry.Prefix+cfg.Lyric+entry.Suffix) // CV
 		}
 	}
 
-	// raw lyric
+	// VCV raw lyric
+	combos = append(combos, makeVCV())
+
+	// CV raw lyric
 	combos = append(combos, cfg.Lyric)
 
-	// trimmed lyric
-	combos = append(combos, strings.TrimSpace(cfg.Lyric))
+	// trimmed variants
+	t := strings.TrimSpace(cfg.Lyric)
+	if t != cfg.Lyric {
+		combos = append(combos, getLastVowel(cfg.PrevLyric)+" "+t) // VCV
+		combos = append(combos, t)                                 // CV
+	}
 
 	return dedupeStrings(combos)
 }
