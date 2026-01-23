@@ -47,7 +47,6 @@ type Oto []OtoEntry
 type otoConfig struct {
 	encoding       encoding.Encoding
 	comment        rune
-	floatWidth     int
 	floatPercision int
 }
 
@@ -69,28 +68,23 @@ func OtoWithComment(comment rune) OtoOption {
 	}
 }
 
-// OtoWithFloatFormat specifies the float formatting options (width and precision)
-// to use when encoding float values in the oto.ini file.
-func OtoWithFloatFormat(width, precision int) OtoOption {
-	if width < 0 {
-		panic("float width cannot be negative")
-	}
-
-	if precision < 0 {
+// OtoWithFloatPrecision specifies the float precision to use when writing float values in the oto.ini file.
+func OtoWithFloatPrecision(prec int) OtoOption {
+	if prec < 0 {
 		panic("float precision cannot be negative")
 	}
 
 	return func(cfg *otoConfig) {
-		cfg.floatWidth = width
-		cfg.floatPercision = precision
+		cfg.floatPercision = prec
 	}
 }
 
 // DecodeOto parses and decodes an oto.ini file from the provided [io.Reader].
 func DecodeOto(r io.Reader, opts ...OtoOption) (Oto, error) {
 	cfg := &otoConfig{
-		encoding: encoding.Nop,
-		comment:  '#',
+		encoding:       encoding.Nop,
+		comment:        '#',
+		floatPercision: -1,
 	}
 
 	for _, opt := range opts {
@@ -201,9 +195,12 @@ func (o Oto) Encode(w io.Writer, opts ...OtoOption) error {
 	for _, entry := range o {
 		// filename=alias,offset,consonant,cutoff,preutter,overlap
 		// filename and alias are strings, the rest are floats
-		fmtStr := "%s=%s,%W.Pf,%W.Pf,%W.Pf,%W.Pf,%W.Pf\n"
-		fmtStr = strings.ReplaceAll(fmtStr, "W", strconv.Itoa(cfg.floatWidth))
-		fmtStr = strings.ReplaceAll(fmtStr, "P", strconv.Itoa(cfg.floatPercision))
+		fmtStr := "%s=%s,%.Pf,%.Pf,%.Pf,%.Pf,%.Pf\n"
+		if cfg.floatPercision >= 0 {
+			fmtStr = strings.ReplaceAll(fmtStr, "P", strconv.Itoa(cfg.floatPercision))
+		} else {
+			fmtStr = strings.ReplaceAll(fmtStr, ".P", "")
+		}
 		_, err := fmt.Fprintf(newWriter, fmtStr,
 			entry.Filename,
 			entry.Alias,
