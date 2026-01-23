@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"slices"
 	"strconv"
 	"strings"
 
@@ -175,15 +174,16 @@ func DecodeOto(r io.Reader, opts ...OtoOption) (Oto, error) {
 	return oto, scan.Err()
 }
 
+//TODO: optimize with binary search and lookup table; also gotta make Oto a struct with a slice inside instead of just a slice
+
 // Get retrieves an [OtoEntry] by its phoneme alias.
 func (o Oto) Get(alias string) (_ OtoEntry, ok bool) {
-	idx, ok := slices.BinarySearchFunc(o, OtoEntry{Alias: alias}, func(a, b OtoEntry) int {
-		return strings.Compare(a.Alias, b.Alias)
-	})
-	if !ok {
-		return OtoEntry{}, false
+	for i := range o {
+		if o[i].Alias == alias {
+			return o[i], true
+		}
 	}
-	return o[idx], true
+	return OtoEntry{}, false
 }
 
 // Encode encodes and writes the oto.ini entries to the provided [io.Writer].
