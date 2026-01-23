@@ -521,11 +521,11 @@ func (vb *Voicebank) getAliasCombos(cfg LookupConfig) []string {
 }
 
 func dedupeStrings(s []string) []string {
-	allKeys := make(map[string]bool)
+	allKeys := make(map[string]struct{})
 	var new []string
 	for _, item := range s {
 		if _, ok := allKeys[item]; !ok {
-			allKeys[item] = true
+			allKeys[item] = struct{}{}
 			new = append(new, item)
 		}
 	}
