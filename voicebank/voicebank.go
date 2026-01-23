@@ -363,10 +363,10 @@ func parseCharacterInfo(fsys fs.FS, cfg *voicebankConfig) (*CharacterInfo, error
 		// valid values: name, author, web, image, sample
 		// the rest is gonna be put in Extra
 		line := scan.Text()
-		idx := strings.IndexByte(line, '=')
-		if idx > 0 {
-			key := strings.TrimSpace(line[:idx])
-			value := strings.TrimSpace(line[idx+1:])
+		key, value, ok := strings.Cut(line, "=")
+		if ok {
+			key = strings.TrimSpace(key)
+			value := strings.TrimSpace(value)
 			switch key {
 			case "name":
 				info.Name = value
