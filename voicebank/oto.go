@@ -103,9 +103,11 @@ func DecodeOto(r io.Reader, opts ...OtoOption) (Oto, error) {
 			continue
 		}
 
-		parts := strings.SplitN(line, "=", 2)
-		filename := parts[0]
-		values := strings.Split(parts[1], ",")
+		filename, _values, ok := strings.Cut(line, "=")
+		if !ok {
+			return oto, fmt.Errorf("invalid oto entry: %s", strconv.Quote(line))
+		}
+		values := strings.Split(_values, ",")
 
 		// filename=alias,offset,consonant,cutoff,preutter,overlap
 		// filename and alias are strings, the rest are floats

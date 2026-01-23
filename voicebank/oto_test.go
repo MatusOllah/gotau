@@ -58,6 +58,14 @@ func TestDecodeOtoInvalid(t *testing.T) {
 	assert.Empty(t, oto)
 }
 
+func TestDecodeOtoInvalidEqualSign(t *testing.T) {
+	src := "invalid_entry.wav\n"
+
+	oto, err := voicebank.DecodeOto(strings.NewReader(src))
+	assert.Error(t, err)
+	assert.Empty(t, oto)
+}
+
 func TestOto_Get(t *testing.T) {
 	oto := voicebank.Oto{
 		{"shi.wav", "し", 10, 90, -200, 70, 25},
