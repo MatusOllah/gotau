@@ -1,6 +1,7 @@
 package voicebank_test
 
 import (
+	"bytes"
 	"strings"
 	"testing"
 
@@ -58,7 +59,7 @@ func TestDecodeOtoInvalid(t *testing.T) {
 	assert.Empty(t, oto)
 }
 
-func TestDecodeOtoInvalidEqualSign(t *testing.T) {
+func TestDecodeOtoMissingEqualSign(t *testing.T) {
 	src := "invalid_entry.wav\n"
 
 	oto, err := voicebank.DecodeOto(strings.NewReader(src))
@@ -66,7 +67,7 @@ func TestDecodeOtoInvalidEqualSign(t *testing.T) {
 	assert.Empty(t, oto)
 }
 
-func TestOto_Get(t *testing.T) {
+func TestOtoGet(t *testing.T) {
 	oto := voicebank.Oto{
 		{"shi.wav", "し", 10, 90, -200, 70, 25},
 		{"ka.wav", "か", 50, 100, -300, 90, 30},
@@ -82,4 +83,67 @@ func TestOto_Get(t *testing.T) {
 	entry, ok = oto.Get("nonexistent")
 	assert.False(t, ok)
 	assert.Empty(t, entry)
+}
+
+func TestOtoEncode(t *testing.T) {
+	oto := voicebank.Oto{
+		{"shi.wav", "し", 10, 90, -200, 70, 25},
+		{"ka.wav", "か", 50, 100, -300, 90, 30},
+		{"あ.wav", "あ", 39, 110, -250, 85, 40},
+	}
+
+	want := `shi.wav=し,10.000000,90.000000,-200.000000,70.000000,25.000000
+ka.wav=か,50.000000,100.000000,-300.000000,90.000000,30.000000
+あ.wav=あ,39.000000,110.000000,-250.000000,85.000000,40.000000
+`
+
+	var buf bytes.Buffer
+	err := oto.Encode(&buf)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, want, buf.String())
+}
+
+func TestOtoEncodeWithPrecision(t *testing.T) {
+	oto := voicebank.Oto{
+		{"shi.wav", "し", 10, 90, -200, 70, 25},
+		{"ka.wav", "か", 50, 100, -300, 90, 30},
+		{"あ.wav", "あ", 39, 110, -250, 85, 40},
+	}
+
+	want := `shi.wav=し,10.000,90.000,-200.000,70.000,25.000
+ka.wav=か,50.000,100.000,-300.000,90.000,30.000
+あ.wav=あ,39.000,110.000,-250.000,85.000,40.000
+`
+
+	var buf bytes.Buffer
+	err := oto.Encode(&buf, voicebank.OtoWithFloatPrecision(3))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, want, buf.String())
+}
+
+func TestOtoRoundTrip(t *testing.T) {
+	src := `a.wav=a,0.000,120.000,-39.000,80.000,20.000
+shi.wav=し,10.000,90.000,-200.000,70.000,25.000
+ka.wav=か,50.000,100.000,-300.000,90.000,30.000
+あ.wav=あ,39.000,110.000,-250.000,85.000,40.000
+`
+
+	oto, err := voicebank.DecodeOto(strings.NewReader(src))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	err = oto.Encode(&buf, voicebank.OtoWithFloatPrecision(3))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, src, buf.String())
 }

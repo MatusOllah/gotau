@@ -82,9 +82,8 @@ func OtoWithFloatPrecision(prec int) OtoOption {
 // DecodeOto parses and decodes an oto.ini file from the provided [io.Reader].
 func DecodeOto(r io.Reader, opts ...OtoOption) (Oto, error) {
 	cfg := &otoConfig{
-		encoding:       encoding.Nop,
-		comment:        '#',
-		floatPercision: -1,
+		encoding: encoding.Nop,
+		comment:  '#',
 	}
 
 	for _, opt := range opts {
@@ -185,7 +184,8 @@ func (o Oto) Get(alias string) (_ OtoEntry, ok bool) {
 // Encode encodes and writes the oto.ini entries to the provided [io.Writer].
 func (o Oto) Encode(w io.Writer, opts ...OtoOption) error {
 	cfg := &otoConfig{
-		encoding: encoding.Nop,
+		encoding:       encoding.Nop,
+		floatPercision: -1,
 	}
 
 	for _, opt := range opts {
