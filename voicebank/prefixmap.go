@@ -72,7 +72,7 @@ func DecodePrefixMap(r io.Reader, opts ...PrefixMapOption) (PrefixMap, error) {
 	prefixMap := make(PrefixMap)
 	for scan.Scan() {
 		line := scan.Text()
-		if strings.HasPrefix(strings.TrimSpace(line), string(cfg.comment)) {
+		if cfg.comment != 0 && strings.HasPrefix(strings.TrimSpace(line), string(cfg.comment)) {
 			continue
 		}
 
