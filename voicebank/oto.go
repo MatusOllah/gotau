@@ -47,6 +47,7 @@ type Oto []OtoEntry
 
 type otoConfig struct {
 	encoding       encoding.Encoding
+	comment        rune
 	floatWidth     int
 	floatPercision int
 }
@@ -58,6 +59,14 @@ type OtoOption func(*otoConfig)
 func OtoWithEncoding(encoding encoding.Encoding) OtoOption {
 	return func(cfg *otoConfig) {
 		cfg.encoding = encoding
+	}
+}
+
+// OtoWithComment specifies the comment character to use when reading the oto.ini file.
+// Lines beginning with this character without preceding whitespace will be ignored.
+func OtoWithComment(comment rune) OtoOption {
+	return func(cfg *otoConfig) {
+		cfg.comment = comment
 	}
 }
 
@@ -82,6 +91,7 @@ func OtoWithFloatFormat(width, precision int) OtoOption {
 func DecodeOto(r io.Reader, opts ...OtoOption) (Oto, error) {
 	cfg := &otoConfig{
 		encoding: encoding.Nop,
+		comment:  '#',
 	}
 
 	for _, opt := range opts {
@@ -96,6 +106,10 @@ func DecodeOto(r io.Reader, opts ...OtoOption) (Oto, error) {
 	var oto Oto
 	for scan.Scan() {
 		line := scan.Text()
+		if cfg.comment != 0 && strings.HasPrefix(strings.TrimSpace(line), string(cfg.comment)) {
+			continue
+		}
+
 		parts := strings.SplitN(line, "=", 2)
 		filename := parts[0]
 		values := strings.Split(parts[1], ",")
