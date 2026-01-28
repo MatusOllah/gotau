@@ -44,7 +44,7 @@ func TestDecode(t *testing.T) {
 						PreUtterance: float64Ptr(42),
 						VoiceOverlap: float64Ptr(42),
 						StartPoint:   float64Ptr(42),
-						Envelope:     &ust.Envelope{5, 35, 0, 100, 100, 0, 0, nil},
+						Envelope:     ust.Env(5, 35, 0, 100, 100, 0, 0, 0, 0),
 						PitchBend: &ust.PitchBend{
 							Type:   5,
 							Start:  umath.XY[float64]{-40, 0},

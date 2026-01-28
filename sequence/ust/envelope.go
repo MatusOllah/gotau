@@ -2,51 +2,94 @@ package ust
 
 import (
 	"fmt"
-
-	"github.com/MatusOllah/slicestrconv"
+	"strconv"
+	"strings"
 )
 
 // Envelope represents a volume envelope.
 type Envelope struct {
-	P1    float64
-	P2    float64
-	P3    float64
-	V1    float64
-	V2    float64
-	V3    float64
-	V4    float64
-	Extra []float64
+	P1    EnvelopeValue
+	P2    EnvelopeValue
+	P3    EnvelopeValue
+	V1    EnvelopeValue
+	V2    EnvelopeValue
+	V3    EnvelopeValue
+	V4    EnvelopeValue
+	P4    EnvelopeValue
+	P5    EnvelopeValue
+	Extra []EnvelopeValue
+}
+
+// EnvelopeValue represents a single value in an envelope, which can be either
+// a fixed value or an automatic value (represented in UST as %).
+type EnvelopeValue struct {
+	Value float32
+	Auto  bool
+}
+
+// Env is shorthand for &Envelope{...}.
+func Env(p1, p2, p3, v1, v2, v3, v4, p4, p5 float32, extra ...float32) *Envelope {
+	var _extra []EnvelopeValue
+	for i := range extra {
+		_extra = append(_extra, EnvelopeValue{Value: extra[i]})
+	}
+
+	return &Envelope{
+		P1:    EnvelopeValue{Value: p1},
+		P2:    EnvelopeValue{Value: p2},
+		P3:    EnvelopeValue{Value: p3},
+		V1:    EnvelopeValue{Value: v1},
+		V2:    EnvelopeValue{Value: v2},
+		V3:    EnvelopeValue{Value: v3},
+		V4:    EnvelopeValue{Value: v4},
+		P4:    EnvelopeValue{Value: p4},
+		P5:    EnvelopeValue{Value: p5},
+		Extra: _extra,
+	}
+}
+
+func parseEnvelopeValue(s string) (EnvelopeValue, error) {
+	if s == "%" || s == "" {
+		return EnvelopeValue{Auto: true}, nil
+	}
+	v, err := strconv.ParseFloat(s, 32)
+	if err != nil {
+		return EnvelopeValue{}, err
+	}
+	return EnvelopeValue{Value: float32(v)}, nil
 }
 
 // ParseEnvelope parses a string representing an [Envelope] in an UST note.
 // The string is expected to contain at least 7 comma-separated floating-point numbers,
-// with the first 7 mapping to P1–P3 and V1–V4, and the rest going into Extra.
-//
-// Example: "5,35,0,100,100,0,0" or "5,35,0,100,100,0,0,10,20"
+// with the first 9 mapping to P1–P3, V1–V4, and P4 and P5, and the rest going into Extra.
 func ParseEnvelope(s string) (*Envelope, error) {
-	slicestrconv.OpeningBracket = ""
-	slicestrconv.ClosingBracket = ""
-	values, err := slicestrconv.ParseFloat64Slice(s, 10)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse envelope string: %w", err)
+	parts := strings.Split(s, ",")
+
+	if len(parts) < 7 {
+		return nil, fmt.Errorf("envelope string must contain at least 7 values, got %d", len(parts))
 	}
 
-	if len(values) < 7 {
-		return nil, fmt.Errorf("envelope string must contain at least 7 values, got %d", len(values))
+	vals := make([]EnvelopeValue, len(parts))
+	for i, p := range parts {
+		ev, err := parseEnvelopeValue(strings.TrimSpace(p))
+		if err != nil {
+			return nil, fmt.Errorf("invalid envelope value at %d: %w", i, err)
+		}
+		vals[i] = ev
 	}
 
 	env := &Envelope{
-		P1: values[0],
-		P2: values[1],
-		P3: values[2],
-		V1: values[3],
-		V2: values[4],
-		V3: values[5],
-		V4: values[6],
+		P1: vals[0],
+		P2: vals[1],
+		P3: vals[2],
+		V1: vals[3],
+		V2: vals[4],
+		V3: vals[5],
+		V4: vals[6],
 	}
 
-	if len(values) > 7 {
-		env.Extra = values[7:]
+	if len(vals) > 7 {
+		env.Extra = vals[7:]
 	}
 
 	return env, nil
