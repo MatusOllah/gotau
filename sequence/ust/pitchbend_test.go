@@ -59,8 +59,8 @@ func TestParsePitchBend(t *testing.T) {
 	assert.NotNil(t, pb)
 
 	assert.Equal(t, 5, pb.Type)
-	assert.Equal(t, 10.0, pb.Start.X)
-	assert.Equal(t, 2.0, pb.Start.Y)
+	assert.Equal(t, float32(10.0), pb.Start.X)
+	assert.Equal(t, float32(2.0), pb.Start.Y)
 	assert.Equal(t, []float32{30, 40}, pb.Widths)
 	assert.Equal(t, []float32{0.5, 1.0}, pb.Ys)
 	assert.Equal(t, []ust.PitchBendMode{ust.PitchBendModeLinear, ust.PitchBendModeSine}, pb.Modes)
@@ -75,8 +75,8 @@ func TestParsePitchBend_EmptyFields(t *testing.T) {
 	pb, err := ust.ParsePitchBend("", "", "0", "10", "0", "")
 	assert.NoError(t, err)
 	assert.Equal(t, 5, pb.Type)
-	assert.Equal(t, 0.0, pb.Start.X)
-	assert.Equal(t, 0.0, pb.Start.Y)
+	assert.Equal(t, float32(0.0), pb.Start.X)
+	assert.Equal(t, float32(0.0), pb.Start.Y)
 }
 
 func TestPitchBend_Curve(t *testing.T) {
@@ -111,7 +111,7 @@ func TestPitchBend_Curve(t *testing.T) {
 			expected: 11,
 			check: func(t *testing.T, curve []umath.XY[float32]) {
 				for _, pt := range curve {
-					assert.Equal(t, 3.0, pt.Y)
+					assert.Equal(t, float32(3.0), pt.Y)
 				}
 			},
 		},
@@ -125,8 +125,8 @@ func TestPitchBend_Curve(t *testing.T) {
 			},
 			expected: 11,
 			check: func(t *testing.T, curve []umath.XY[float32]) {
-				assert.Equal(t, 0.0, curve[0].Y)
-				assert.Equal(t, 5.0, curve[1].Y)
+				assert.Equal(t, float32(0.0), curve[0].Y)
+				assert.Equal(t, float32(5.0), curve[1].Y)
 			},
 		},
 		{
@@ -139,7 +139,7 @@ func TestPitchBend_Curve(t *testing.T) {
 			},
 			expected: 11,
 			check: func(t *testing.T, curve []umath.XY[float32]) {
-				assert.Greater(t, curve[5].Y, 4.0)
+				assert.Greater(t, curve[5].Y, float32(4.0))
 			},
 		},
 		{
