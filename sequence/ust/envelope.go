@@ -53,14 +53,13 @@ func parseEnvelopeValue(s string) (EnvelopeValue, error) {
 }
 
 // ParseEnvelope parses a string representing an [Envelope] in an UST note.
-// The string is expected to contain at least 7 comma-separated floating-point numbers.
 func ParseEnvelope(s string) (*Envelope, error) {
 	parts := strings.Split(s, ",")
 
 	if len(parts) < 7 {
 		return nil, fmt.Errorf("envelope string must contain at least 7 values, got %d", len(parts))
 	}
-	if len(parts) > 9 {
+	if len(parts) > 10 {
 		return nil, fmt.Errorf("envelope string must contain at most 9 values, got %d", len(parts))
 	}
 
@@ -90,6 +89,8 @@ func ParseEnvelope(s string) (*Envelope, error) {
 		env.P4 = vals[7]
 		env.P5 = vals[8]
 	}
+
+	// ignore 10th value
 
 	return env, nil
 }
