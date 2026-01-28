@@ -61,8 +61,8 @@ func TestParsePitchBend(t *testing.T) {
 	assert.Equal(t, 5, pb.Type)
 	assert.Equal(t, 10.0, pb.Start.X)
 	assert.Equal(t, 2.0, pb.Start.Y)
-	assert.Equal(t, []float64{30, 40}, pb.Widths)
-	assert.Equal(t, []float64{0.5, 1.0}, pb.Ys)
+	assert.Equal(t, []float32{30, 40}, pb.Widths)
+	assert.Equal(t, []float32{0.5, 1.0}, pb.Ys)
 	assert.Equal(t, []ust.PitchBendMode{ust.PitchBendModeLinear, ust.PitchBendModeSine}, pb.Modes)
 }
 
@@ -84,32 +84,32 @@ func TestPitchBend_Curve(t *testing.T) {
 		name     string
 		pb       *ust.PitchBend
 		expected int
-		check    func(t *testing.T, curve []umath.XY[float64])
+		check    func(t *testing.T, curve []umath.XY[float32])
 	}{
 		{
 			name: "LinearSegment",
 			pb: &ust.PitchBend{
-				Start:  umath.XY[float64]{X: 0, Y: 0},
-				Widths: []float64{10},
-				Ys:     []float64{10},
+				Start:  umath.XY[float32]{X: 0, Y: 0},
+				Widths: []float32{10},
+				Ys:     []float32{10},
 				Modes:  []ust.PitchBendMode{ust.PitchBendModeLinear},
 			},
 			expected: 11,
-			check: func(t *testing.T, curve []umath.XY[float64]) {
-				assert.Equal(t, umath.XY[float64]{X: 0, Y: 0}, curve[0])
-				assert.Equal(t, umath.XY[float64]{X: 10, Y: 10}, curve[len(curve)-1])
+			check: func(t *testing.T, curve []umath.XY[float32]) {
+				assert.Equal(t, umath.XY[float32]{X: 0, Y: 0}, curve[0])
+				assert.Equal(t, umath.XY[float32]{X: 10, Y: 10}, curve[len(curve)-1])
 			},
 		},
 		{
 			name: "RigidSegment",
 			pb: &ust.PitchBend{
-				Start:  umath.XY[float64]{X: 5, Y: 3},
-				Widths: []float64{10},
-				Ys:     []float64{7},
+				Start:  umath.XY[float32]{X: 5, Y: 3},
+				Widths: []float32{10},
+				Ys:     []float32{7},
 				Modes:  []ust.PitchBendMode{ust.PitchBendModeRigid},
 			},
 			expected: 11,
-			check: func(t *testing.T, curve []umath.XY[float64]) {
+			check: func(t *testing.T, curve []umath.XY[float32]) {
 				for _, pt := range curve {
 					assert.Equal(t, 3.0, pt.Y)
 				}
@@ -118,13 +118,13 @@ func TestPitchBend_Curve(t *testing.T) {
 		{
 			name: "JumpSegment",
 			pb: &ust.PitchBend{
-				Start:  umath.XY[float64]{X: 0, Y: 0},
-				Widths: []float64{10},
-				Ys:     []float64{5},
+				Start:  umath.XY[float32]{X: 0, Y: 0},
+				Widths: []float32{10},
+				Ys:     []float32{5},
 				Modes:  []ust.PitchBendMode{ust.PitchBendModeJump},
 			},
 			expected: 11,
-			check: func(t *testing.T, curve []umath.XY[float64]) {
+			check: func(t *testing.T, curve []umath.XY[float32]) {
 				assert.Equal(t, 0.0, curve[0].Y)
 				assert.Equal(t, 5.0, curve[1].Y)
 			},
@@ -132,28 +132,28 @@ func TestPitchBend_Curve(t *testing.T) {
 		{
 			name: "SineSegment",
 			pb: &ust.PitchBend{
-				Start:  umath.XY[float64]{X: 0, Y: 0},
-				Widths: []float64{10},
-				Ys:     []float64{10},
+				Start:  umath.XY[float32]{X: 0, Y: 0},
+				Widths: []float32{10},
+				Ys:     []float32{10},
 				Modes:  []ust.PitchBendMode{ust.PitchBendModeSine},
 			},
 			expected: 11,
-			check: func(t *testing.T, curve []umath.XY[float64]) {
+			check: func(t *testing.T, curve []umath.XY[float32]) {
 				assert.Greater(t, curve[5].Y, 4.0)
 			},
 		},
 		{
 			name: "DefaultSegment",
 			pb: &ust.PitchBend{
-				Start:  umath.XY[float64]{X: 0, Y: 0},
-				Widths: []float64{10},
-				Ys:     []float64{10},
+				Start:  umath.XY[float32]{X: 0, Y: 0},
+				Widths: []float32{10},
+				Ys:     []float32{10},
 				Modes:  []ust.PitchBendMode{},
 			},
 			expected: 11,
-			check: func(t *testing.T, curve []umath.XY[float64]) {
-				assert.Equal(t, umath.XY[float64]{X: 0, Y: 0}, curve[0])
-				assert.Equal(t, umath.XY[float64]{X: 10, Y: 10}, curve[len(curve)-1])
+			check: func(t *testing.T, curve []umath.XY[float32]) {
+				assert.Equal(t, umath.XY[float32]{X: 0, Y: 0}, curve[0])
+				assert.Equal(t, umath.XY[float32]{X: 10, Y: 10}, curve[len(curve)-1])
 			},
 		},
 	}
@@ -169,15 +169,15 @@ func TestPitchBend_Curve(t *testing.T) {
 
 func BenchmarkPitchBend_Curve(b *testing.B) {
 	pb := &ust.PitchBend{
-		Start:  umath.XY[float64]{X: 0, Y: 0},
-		Widths: make([]float64, 100),
-		Ys:     make([]float64, 100),
+		Start:  umath.XY[float32]{X: 0, Y: 0},
+		Widths: make([]float32, 100),
+		Ys:     make([]float32, 100),
 		Modes:  make([]ust.PitchBendMode, 100),
 	}
 
 	for i := range 100 {
 		pb.Widths[i] = 10
-		pb.Ys[i] = float64(i)
+		pb.Ys[i] = float32(i)
 		pb.Modes[i] = ust.PitchBendModeLinear
 	}
 

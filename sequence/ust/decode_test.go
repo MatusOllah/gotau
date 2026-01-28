@@ -39,11 +39,11 @@ func TestDecode(t *testing.T) {
 						Lyric:        "a",
 						NoteNum:      midi.Note(69),
 						Intensity:    100,
-						Velocity:     float64Ptr(100),
+						Velocity:     float32Ptr(100),
 						Modulation:   0,
-						PreUtterance: float64Ptr(42),
-						VoiceOverlap: float64Ptr(42),
-						StartPoint:   float64Ptr(42),
+						PreUtterance: float32Ptr(42),
+						VoiceOverlap: float32Ptr(42),
+						StartPoint:   float32Ptr(42),
 						Envelope: &ust.Envelope{
 							P1: ust.EnvelopeValue{Value: 5},
 							P2: ust.EnvelopeValue{Value: 35},
@@ -57,9 +57,9 @@ func TestDecode(t *testing.T) {
 						},
 						PitchBend: &ust.PitchBend{
 							Type:   5,
-							Start:  umath.XY[float64]{X: -40, Y: 0},
-							Widths: []float64{65, 69},
-							Ys:     []float64{0, 42},
+							Start:  umath.XY[float32]{X: -40, Y: 0},
+							Widths: []float32{65, 69},
+							Ys:     []float32{0, 42},
 							Modes:  []ust.PitchBendMode{ust.PitchBendModeLinear, ust.PitchBendModeSine},
 						},
 					},
@@ -108,14 +108,14 @@ func TestDecode(t *testing.T) {
 						Length:     720,
 						Lyric:      "a",
 						NoteNum:    midi.Note(69),
-						Velocity:   float64Ptr(100),
+						Velocity:   float32Ptr(100),
 						Intensity:  100,
 						Modulation: 0,
 						PitchBend: &ust.PitchBend{
 							Type:   5,
-							Start:  umath.XY[float64]{X: -40, Y: 0},
-							Widths: []float64{65},
-							Ys:     []float64{0},
+							Start:  umath.XY[float32]{X: -40, Y: 0},
+							Widths: []float32{65},
+							Ys:     []float32{0},
 							Modes:  []ust.PitchBendMode{ust.PitchBendModeSine},
 						},
 					},
@@ -138,14 +138,14 @@ func TestDecode(t *testing.T) {
 						Length:     720,
 						Lyric:      "a",
 						NoteNum:    midi.Note(69),
-						Velocity:   float64Ptr(100),
+						Velocity:   float32Ptr(100),
 						Intensity:  100,
 						Modulation: 0,
 						PitchBend: &ust.PitchBend{
 							Type:   5,
-							Start:  umath.XY[float64]{X: -40, Y: 0},
-							Widths: []float64{65},
-							Ys:     []float64{0},
+							Start:  umath.XY[float32]{X: -40, Y: 0},
+							Widths: []float32{65},
+							Ys:     []float32{0},
 							Modes:  []ust.PitchBendMode{ust.PitchBendModeSine},
 						},
 					},
@@ -183,6 +183,6 @@ func fileIsEqual(t *testing.T, expect, actual *ust.File) {
 	assert.Equal(t, expect.Notes, actual.Notes)
 }
 
-func float64Ptr(v float64) *float64 {
+func float32Ptr(v float32) *float32 {
 	return &v
 }

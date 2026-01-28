@@ -3,7 +3,7 @@ package ust
 // Settings represents the settings of the UST file.
 // It holds various metadata and configuration used in vocal synthesis.
 type Settings struct {
-	Tempo       float64 // Tempo is the tempo (in BPM).
+	Tempo       float32 // Tempo is the tempo (in BPM).
 	ProjectName string  // ProjectName is a human-readable name of the project.
 	Project     string  // Project is the path to the project (used only in OpenUtau).
 	VoiceDir    string  // VoiceDir is the directory path to the voicebank.

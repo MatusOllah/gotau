@@ -11,7 +11,7 @@ import (
 )
 
 // PitchBendMode represents a pitch bend segment interpolation mode.
-type PitchBendMode int
+type PitchBendMode uint8
 
 const (
 	PitchBendModeLinear PitchBendMode = iota
@@ -71,9 +71,9 @@ func ParsePitchBendMode(s string) (PitchBendMode, error) {
 // PitchBend represents the pitch bend data.
 type PitchBend struct {
 	Type   int               // Type is the pitch bend type (0 = no bend, 5 = default).
-	Start  umath.XY[float64] // Start is the starting point in ticks (X-axis) and initial pitch offset (Y-axis in semitones).
-	Widths []float64         // Widths are the widths in ticks for each pitch segment.
-	Ys     []float64         // Ys are the pitch offsets in semitones for each segment.
+	Start  umath.XY[float32] // Start is the starting point in ticks (X-axis) and initial pitch offset (Y-axis in semitones).
+	Widths []float32         // Widths are the widths in ticks for each pitch segment.
+	Ys     []float32         // Ys are the pitch offsets in semitones for each segment.
 	Modes  []PitchBendMode   // Modes are the interpolation modes for each segment.
 }
 
@@ -104,13 +104,13 @@ func ParsePitchBend(typ, start, pbs, pbw, pby, pbm string) (pb *PitchBend, err e
 	slicestrconv.ClosingBracket = ""
 
 	// PBW
-	pb.Widths, err = slicestrconv.ParseFloat64Slice(pbw)
+	pb.Widths, err = slicestrconv.ParseFloat32Slice(pbw)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse pitch bend widths: %w", err)
 	}
 
 	// PBY
-	pb.Ys, err = slicestrconv.ParseFloat64Slice(pby)
+	pb.Ys, err = slicestrconv.ParseFloat32Slice(pby)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse pitch bend ys: %w", err)
 	}
@@ -129,7 +129,7 @@ func ParsePitchBend(typ, start, pbs, pbw, pby, pbm string) (pb *PitchBend, err e
 
 	// normalize missing PBY, default to 0
 	if len(pb.Widths) > 0 && len(pb.Ys) == 0 {
-		pb.Ys = []float64{0}
+		pb.Ys = []float32{0}
 	}
 
 	// normalize PBM, default to sine
@@ -142,25 +142,25 @@ func ParsePitchBend(typ, start, pbs, pbw, pby, pbm string) (pb *PitchBend, err e
 
 func (pb *PitchBend) parseStart(s string) error {
 	pbsParts := strings.Split(s, ";")
-	x, err := strconv.ParseFloat(pbsParts[0], 64)
+	x, err := strconv.ParseFloat(pbsParts[0], 32)
 	if err != nil {
 		return err
 	}
 	y := 0.0
 	if len(pbsParts) > 1 {
-		y, err = strconv.ParseFloat(pbsParts[1], 64)
+		y, err = strconv.ParseFloat(pbsParts[1], 32)
 		if err != nil {
 			return err
 		}
 	}
-	pb.Start = umath.XY[float64]{X: x, Y: y}
+	pb.Start = umath.XY[float32]{X: float32(x), Y: float32(y)}
 	return nil
 }
 
 // Curve computes a curve from the pitch bend data.
-func (pb *PitchBend) Curve() []umath.XY[float64] {
+func (pb *PitchBend) Curve() []umath.XY[float32] {
 	const samplesPerSegment = 10
-	curve := []umath.XY[float64]{}
+	curve := []umath.XY[float32]{}
 	prevX, prevY := pb.Start.X, pb.Start.Y
 
 	// Handle cases where we have incomplete data
@@ -176,14 +176,14 @@ func (pb *PitchBend) Curve() []umath.XY[float64] {
 		}
 
 		for j := 0; j <= samplesPerSegment; j++ {
-			t := float64(j) / float64(samplesPerSegment)
-			var y float64
+			t := float32(j) / float32(samplesPerSegment)
+			var y float32
 
 			switch mode {
 			case PitchBendModeLinear:
 				y = prevY*(1-t) + endY*t
 			case PitchBendModeSine:
-				y = prevY + (endY-prevY)*(0.5-0.5*math.Cos(math.Pi*t))
+				y = prevY + (endY-prevY)*(0.5-0.5*float32(math.Cos(math.Pi*float64(t))))
 			case PitchBendModeRigid:
 				y = prevY
 			case PitchBendModeJump:
@@ -197,7 +197,7 @@ func (pb *PitchBend) Curve() []umath.XY[float64] {
 			}
 
 			x := prevX + width*t
-			curve = append(curve, umath.XY[float64]{X: x, Y: y})
+			curve = append(curve, umath.XY[float32]{X: x, Y: y})
 		}
 
 		prevX = endX
