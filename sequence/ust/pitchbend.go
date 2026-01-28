@@ -104,13 +104,13 @@ func ParsePitchBend(typ, start, pbs, pbw, pby, pbm string) (pb *PitchBend, err e
 	slicestrconv.ClosingBracket = ""
 
 	// PBW
-	pb.Widths, err = slicestrconv.ParseFloat64Slice(pbw, 10)
+	pb.Widths, err = slicestrconv.ParseFloat64Slice(pbw)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse pitch bend widths: %w", err)
 	}
 
 	// PBY
-	pb.Ys, err = slicestrconv.ParseFloat64Slice(pby, 10)
+	pb.Ys, err = slicestrconv.ParseFloat64Slice(pby)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse pitch bend ys: %w", err)
 	}
@@ -125,6 +125,16 @@ func ParsePitchBend(typ, start, pbs, pbw, pby, pbm string) (pb *PitchBend, err e
 			return nil, err
 		}
 		pb.Modes = append(pb.Modes, mode)
+	}
+
+	// normalize missing PBY, default to 0
+	if len(pb.Widths) > 0 && len(pb.Ys) == 0 {
+		pb.Ys = []float64{0}
+	}
+
+	// normalize PBM, default to sine
+	for len(pb.Modes) < len(pb.Ys) {
+		pb.Modes = append(pb.Modes, PitchBendModeSine)
 	}
 
 	return pb, nil
