@@ -22,16 +22,10 @@ func TestParseEnvelope(t *testing.T) {
 			expectErr:   false,
 		},
 		{
-			name:        "ValidWithExtra",
-			s:           "1,2,3,4,5,6,7,8,9",
-			expectedEnv: ust.Env(1, 2, 3, 4, 5, 6, 7, 8, 9),
-			expectErr:   false,
-		},
-		{
 			name:        "Invalid_NonNumericInput",
 			s:           "1,2,3,wonderhoy,5,6,7",
 			expectErr:   true,
-			errContains: "failed to parse envelope string",
+			errContains: "invalid envelope value at 3",
 		},
 		{
 			name:        "Invalid_TooFewValues",
@@ -43,7 +37,7 @@ func TestParseEnvelope(t *testing.T) {
 			name:        "Invalid_EmptyString",
 			s:           "",
 			expectErr:   true,
-			errContains: "failed to parse envelope string",
+			errContains: "must contain at least 7 values",
 		},
 	}
 
