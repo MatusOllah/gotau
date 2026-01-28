@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/MatusOllah/enczip/zip"
 
@@ -16,6 +17,8 @@ func main() {
 		fmt.Fprintf(os.Stderr, "usage: %s <voicebank zip> <input ust>\n", os.Args[0])
 		return
 	}
+
+	before := time.Now()
 
 	zr, err := zip.OpenReader(os.Args[1], japanese.ShiftJIS)
 	if err != nil {
@@ -68,4 +71,6 @@ func main() {
 	if err := outOto.Encode(os.Stdout); err != nil {
 		panic(err)
 	}
+
+	fmt.Fprintf(os.Stderr, "took %v\n", time.Since(before))
 }
