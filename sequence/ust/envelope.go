@@ -8,15 +8,15 @@ import (
 
 // Envelope represents a volume envelope.
 type Envelope struct {
-	P1 EnvelopeValue
-	P2 EnvelopeValue
-	P3 EnvelopeValue
-	V1 EnvelopeValue
-	V2 EnvelopeValue
-	V3 EnvelopeValue
-	V4 EnvelopeValue
-	P4 EnvelopeValue
-	P5 EnvelopeValue
+	P1 EnvelopeValue // P1 is the fade-in start offset (in milliseconds).
+	P2 EnvelopeValue // P2 is the fade-in end offset (in milliseconds).
+	P3 EnvelopeValue // P3 is the decay start offset (in milliseconds).
+	V1 EnvelopeValue // V1 is the volume at P2 (in percentage).
+	V2 EnvelopeValue // V2 is the volume at P3 (in percentage).
+	V3 EnvelopeValue // V3 is the volume at P4 (in percentage).
+	V4 EnvelopeValue // V4 is the volume at P5 (in percentage).
+	P4 EnvelopeValue // P4 is the sustain end offset (in milliseconds).
+	P5 EnvelopeValue // P5 is the fade-out end offset (in milliseconds).
 }
 
 // EnvelopeValue represents a single value in an envelope, which can be either
