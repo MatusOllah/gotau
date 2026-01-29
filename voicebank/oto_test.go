@@ -2,6 +2,7 @@ package voicebank_test
 
 import (
 	"bytes"
+	"io"
 	"strings"
 	"testing"
 
@@ -146,4 +147,16 @@ ka.wav=か,50.000,100.000,-300.000,90.000,30.000
 	}
 
 	assert.Equal(t, src, buf.String())
+}
+
+func BenchmarkOtoEncode(b *testing.B) {
+	oto := voicebank.Oto{
+		{"あ.wav", "あ", 39, 110, -250, 85, 40},
+	}
+
+	for b.Loop() {
+		if err := oto.Encode(io.Discard); err != nil {
+			b.Fatal(err)
+		}
+	}
 }
