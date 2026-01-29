@@ -16,3 +16,18 @@ linters:
         - (*bytes.Buffer).Write
         - (*bytes.Buffer).WriteByte
         - (*bytes.Buffer).WriteString
+    
+    misspell:
+      locale: US
+      ignore-rules:
+        - oto
+        - voicebank
+        - gotau
+        - vcv
+        - cv
+        - utau
+        - vocaloid
+        - kasane
+        - teto
+        - hatsune
+        - miku
