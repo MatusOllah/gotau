@@ -2,6 +2,7 @@ package voicebank
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"strconv"
@@ -47,7 +48,7 @@ type Oto []OtoEntry
 type otoConfig struct {
 	encoding       encoding.Encoding
 	comment        rune
-	floatPercision int
+	floatPrecision int
 }
 
 // OtoOption represents an option for passing into oto.ini-related functions and methods.
@@ -75,7 +76,7 @@ func OtoWithFloatPrecision(prec int) OtoOption {
 	}
 
 	return func(cfg *otoConfig) {
-		cfg.floatPercision = prec
+		cfg.floatPrecision = prec
 	}
 }
 
@@ -185,34 +186,42 @@ func (o Oto) Get(alias string) (_ OtoEntry, ok bool) {
 func (o Oto) Encode(w io.Writer, opts ...OtoOption) error {
 	cfg := &otoConfig{
 		encoding:       encoding.Nop,
-		floatPercision: -1,
+		floatPrecision: -1,
 	}
 
 	for _, opt := range opts {
 		opt(cfg)
 	}
 
-	newWriter := transform.NewWriter(w, cfg.encoding.NewEncoder())
+	newWriter := w
+	if cfg.encoding != encoding.Nop {
+		newWriter = transform.NewWriter(w, cfg.encoding.NewEncoder())
+	}
+	var buf bytes.Buffer
+	buf.Grow(256)                   // preallocate some space
+	floatTmp := make([]byte, 0, 32) // scratch buffer for floats
 
 	for _, entry := range o {
 		// filename=alias,offset,consonant,cutoff,preutter,overlap
 		// filename and alias are strings, the rest are floats
-		fmtStr := "%s=%s,%.Pf,%.Pf,%.Pf,%.Pf,%.Pf\n"
-		if cfg.floatPercision >= 0 {
-			fmtStr = strings.ReplaceAll(fmtStr, "P", strconv.Itoa(cfg.floatPercision))
-		} else {
-			fmtStr = strings.ReplaceAll(fmtStr, ".P", "")
-		}
-		_, err := fmt.Fprintf(newWriter, fmtStr,
-			entry.Filename,
-			entry.Alias,
-			entry.Offset,
-			entry.Consonant,
-			entry.Cutoff,
-			entry.Preutterance,
-			entry.Overlap,
-		)
-		if err != nil {
+		buf.Reset()
+
+		buf.WriteString(entry.Filename)
+		buf.WriteByte('=')
+		buf.WriteString(entry.Alias)
+		buf.WriteByte(',')
+		buf.Write(strconv.AppendFloat(floatTmp[:0], float64(entry.Offset), 'f', cfg.floatPrecision, 32))
+		buf.WriteByte(',')
+		buf.Write(strconv.AppendFloat(floatTmp[:0], float64(entry.Consonant), 'f', cfg.floatPrecision, 32))
+		buf.WriteByte(',')
+		buf.Write(strconv.AppendFloat(floatTmp[:0], float64(entry.Cutoff), 'f', cfg.floatPrecision, 32))
+		buf.WriteByte(',')
+		buf.Write(strconv.AppendFloat(floatTmp[:0], float64(entry.Preutterance), 'f', cfg.floatPrecision, 32))
+		buf.WriteByte(',')
+		buf.Write(strconv.AppendFloat(floatTmp[:0], float64(entry.Overlap), 'f', cfg.floatPrecision, 32))
+		buf.WriteByte(10) // newline
+
+		if _, err := buf.WriteTo(newWriter); err != nil {
 			return fmt.Errorf("failed to write oto entry for %s: %w", strconv.Quote(entry.Filename), err)
 		}
 	}
