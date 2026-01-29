@@ -13,3 +13,6 @@ linters:
         - io.Copy(*bytes.Buffer)
         - io.Copy(os.Stdout)
         - io.Copy(os.Stderr)
+        - (*bytes.Buffer).Write
+        - (*bytes.Buffer).WriteByte
+        - (*bytes.Buffer).WriteString
