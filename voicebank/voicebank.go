@@ -490,23 +490,21 @@ func (vb *Voicebank) getAliasCombos(cfg LookupConfig) []string {
 		vowel = getLastVowel(cfg.PrevLyric)
 	}
 
-	makeVCV := func() string {
-		if vowel != "" {
-			return vowel + " " + cfg.Lyric
-		}
-		return "- " + cfg.Lyric
+	vcvPrefix := "- " + cfg.Lyric
+	if vowel != "" {
+		vcvPrefix = vowel + " " + cfg.Lyric
 	}
 
 	// prefix.map
 	if vb.PrefixMap != nil {
 		if entry, ok := vb.PrefixMap[cfg.Note]; ok {
-			combos = append(combos, entry.Prefix+makeVCV()+entry.Suffix) // VCV
+			combos = append(combos, entry.Prefix+vcvPrefix+entry.Suffix) // VCV
 			combos = append(combos, entry.Prefix+cfg.Lyric+entry.Suffix) // CV
 		}
 	}
 
 	// VCV raw lyric
-	combos = append(combos, makeVCV())
+	combos = append(combos, vcvPrefix)
 
 	// CV raw lyric
 	combos = append(combos, cfg.Lyric)
