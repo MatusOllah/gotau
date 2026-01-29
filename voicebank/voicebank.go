@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"image"
 	"io/fs"
+	"slices"
 	"strings"
 
 	_ "image/png"
@@ -517,17 +518,5 @@ func (vb *Voicebank) getAliasCombos(cfg LookupConfig) []string {
 		combos = append(combos, t)                                 // CV
 	}
 
-	return dedupeStrings(combos)
-}
-
-func dedupeStrings(s []string) []string {
-	allKeys := make(map[string]struct{})
-	var new []string
-	for _, item := range s {
-		if _, ok := allKeys[item]; !ok {
-			allKeys[item] = struct{}{}
-			new = append(new, item)
-		}
-	}
-	return new
+	return slices.Compact(combos)
 }
