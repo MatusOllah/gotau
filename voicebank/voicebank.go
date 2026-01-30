@@ -457,12 +457,12 @@ type LookupConfig struct {
 //  6. whitespace-trimmed lyric
 //
 // If no matching entry is found in the voicebank, it returns an empty [OtoEntry] and false.
-func (vb *Voicebank) Lookup(cfg LookupConfig) (_ OtoEntry, ok bool) {
+func (vb *Voicebank) Lookup(cfg LookupConfig) (entry OtoEntry, ok bool) {
 	combos := vb.getAliasCombos(cfg)
 
 	for _, combo := range combos {
-		if entry, ok := vb.Oto.Get(combo); ok {
-			return entry, true
+		if entry, ok = vb.Oto.Get(combo); ok {
+			return
 		}
 	}
 	return OtoEntry{}, false
