@@ -469,17 +469,16 @@ func (vb *Voicebank) Lookup(cfg LookupConfig) (entry OtoEntry, ok bool) {
 }
 
 func getLastVowel(lyric string) string {
-	var last string
-	for _, r := range lyric {
-		switch r {
+	for i := len(lyric) - 1; i >= 0; i-- {
+		switch r := rune(lyric[i]); r {
 		case 'a', 'e', 'i', 'o', 'u',
 			'A', 'E', 'I', 'O', 'U',
 			'あ', 'え', 'い', 'お', 'う',
 			'ア', 'エ', 'イ', 'オ', 'ウ':
-			last = string(r)
+			return string(r)
 		}
 	}
-	return last
+	return ""
 }
 
 func (vb *Voicebank) getAliasCombos(cfg LookupConfig) []string {
