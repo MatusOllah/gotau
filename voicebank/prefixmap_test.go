@@ -1,6 +1,8 @@
 package voicebank_test
 
 import (
+	"bytes"
+	"cmp"
 	"strings"
 	"testing"
 
@@ -111,4 +113,26 @@ func TestDecodePrefixMapInvalidNote(t *testing.T) {
 	prefixmap, err := voicebank.DecodePrefixMap(strings.NewReader(s))
 	assert.Nil(t, prefixmap)
 	assert.ErrorContains(t, err, "invalid note format")
+}
+
+func TestPrefixMapRoundTrip(t *testing.T) {
+	want := "C5\tpre\tsuf\nD#5\tpre\t\nF#5\t\tsuf\n"
+
+	prefixmap, err := voicebank.DecodePrefixMap(strings.NewReader(want))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	err = prefixmap.Encode(&buf,
+		voicebank.PrefixMapWithSort(func(a, b midi.Note) int {
+			return cmp.Compare(a, b)
+		}),
+		voicebank.PrefixMapWithSharps(),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, want, buf.String())
 }

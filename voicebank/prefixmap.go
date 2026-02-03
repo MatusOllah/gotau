@@ -2,9 +2,12 @@ package voicebank
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
+	"maps"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -28,6 +31,8 @@ type prefixMapConfig struct {
 	encoding  encoding.Encoding
 	delimiter rune
 	comment   rune
+	sortFunc  func(a, b midi.Note) int
+	sharps    bool
 }
 
 // PrefixMapOption represents an option for passing into prefix.map-related functions and methods.
@@ -52,6 +57,24 @@ func PrefixMapWithDelimiter(delim rune) PrefixMapOption {
 func PrefixMapWithComment(comment rune) PrefixMapOption {
 	return func(cfg *prefixMapConfig) {
 		cfg.comment = comment
+	}
+}
+
+// PrefixMapWithSort enables sorting and specifies the sorting function to use when writing
+// the prefix.map file.
+func PrefixMapWithSort(cmpFunc func(a, b midi.Note) int) PrefixMapOption {
+	return func(cfg *prefixMapConfig) {
+		cfg.sortFunc = cmpFunc
+	}
+}
+
+// PrefixMapWithSharps makes [PrefixMap.Encode] write notes using sharps instead of flats.
+//
+// By default, accidentals are written using flats (e.g. Db, Eb).
+// This option only affects encoding; decoding accepts both sharps and flats.
+func PrefixMapWithSharps() PrefixMapOption {
+	return func(cfg *prefixMapConfig) {
+		cfg.sharps = true
 	}
 }
 
@@ -140,4 +163,104 @@ func parseNote(s string) (midi.Note, error) {
 	default:
 		return 0, fmt.Errorf("invalid base: %q", base+accidental)
 	}
+}
+
+// Encode encodes and writes the prefixes to the provided [io.Writer].
+func (pm PrefixMap) Encode(w io.Writer, opts ...PrefixMapOption) error {
+	cfg := &prefixMapConfig{
+		encoding:  encoding.Nop,
+		delimiter: '\t',
+	}
+
+	for _, opt := range opts {
+		opt(cfg)
+	}
+
+	notes := slices.Collect(maps.Keys(pm))
+	if cfg.sortFunc != nil {
+		slices.SortFunc(notes, cfg.sortFunc)
+	}
+
+	newWriter := w
+	if cfg.encoding != encoding.Nop {
+		newWriter = transform.NewWriter(w, cfg.encoding.NewEncoder())
+	}
+	var buf bytes.Buffer
+	buf.Grow(16) // preallocate some space
+
+	for _, note := range notes {
+		prefix := pm[note]
+
+		buf.Reset()
+
+		buf.WriteString(formatNote(note, cfg.sharps))
+		buf.WriteRune(cfg.delimiter)
+		if prefix.Prefix != "" {
+			buf.WriteString(prefix.Prefix)
+		}
+		buf.WriteRune(cfg.delimiter)
+		if prefix.Suffix != "" {
+			buf.WriteString(prefix.Suffix)
+		}
+		buf.WriteByte(10) // newline
+
+		if _, err := buf.WriteTo(newWriter); err != nil {
+			return fmt.Errorf("failed to write prefix.map entry for note %s: %w", note.String(), err)
+		}
+	}
+
+	return nil
+}
+
+func formatNote(note midi.Note, sharps bool) string {
+	var name string
+	switch note % 12 {
+	case 0:
+		name = "C"
+	case 1:
+		if sharps {
+			name = "C#"
+		} else {
+			name = "Db"
+		}
+	case 2:
+		name = "D"
+	case 3:
+		if sharps {
+			name = "D#"
+		} else {
+			name = "Eb"
+		}
+	case 4:
+		name = "E"
+	case 5:
+		name = "F"
+	case 6:
+		if sharps {
+			name = "F#"
+		} else {
+			name = "Gb"
+		}
+	case 7:
+		name = "G"
+	case 8:
+		if sharps {
+			name = "G#"
+		} else {
+			name = "Ab"
+		}
+	case 9:
+		name = "A"
+	case 10:
+		if sharps {
+			name = "A#"
+		} else {
+			name = "Bb"
+		}
+	case 11:
+		name = "B"
+	default:
+		panic("unreachable")
+	}
+	return name + strconv.FormatInt(int64(note/12), 10)
 }
