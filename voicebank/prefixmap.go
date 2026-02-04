@@ -135,34 +135,46 @@ func parseNote(s string) (midi.Note, error) {
 		return 0, fmt.Errorf("invalid octave: %q", m[3])
 	}
 
+	if octave > 10 {
+		octave = 10
+	}
+
+	var note uint8
 	switch base + accidental {
 	case "C":
-		return midi.Note(midi.C(uint8(octave))), nil
+		note = 0
 	case "C#", "Db":
-		return midi.Note(midi.Db(uint8(octave))), nil
+		note = 1
 	case "D":
-		return midi.Note(midi.D(uint8(octave))), nil
+		note = 2
 	case "D#", "Eb":
-		return midi.Note(midi.Eb(uint8(octave))), nil
+		note = 3
 	case "E":
-		return midi.Note(midi.E(uint8(octave))), nil
+		note = 4
 	case "F":
-		return midi.Note(midi.F(uint8(octave))), nil
+		note = 5
 	case "F#", "Gb":
-		return midi.Note(midi.Gb(uint8(octave))), nil
+		note = 6
 	case "G":
-		return midi.Note(midi.G(uint8(octave))), nil
+		note = 7
 	case "G#", "Ab":
-		return midi.Note(midi.Ab(uint8(octave))), nil
+		note = 8
 	case "A":
-		return midi.Note(midi.A(uint8(octave))), nil
+		note = 9
 	case "A#", "Bb", "Hb": // H = B in German notation
-		return midi.Note(midi.Bb(uint8(octave))), nil
+		note = 10
 	case "B", "H": // H = B in German notation
-		return midi.Note(midi.B(uint8(octave))), nil
+		note = 11
 	default:
 		return 0, fmt.Errorf("invalid base: %q", base+accidental)
 	}
+	if octave != 0 {
+		note += uint8(12 * octave)
+		if note > 127 {
+			note -= 12
+		}
+	}
+	return midi.Note(note), nil
 }
 
 // Encode encodes and writes the prefixes to the provided [io.Writer].
