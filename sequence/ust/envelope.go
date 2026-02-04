@@ -6,6 +6,8 @@ import (
 	"strings"
 )
 
+//TODO: v5???
+
 // Envelope represents a volume envelope.
 type Envelope struct {
 	P1 EnvelopeValue // P1 is the fade-in start offset (in milliseconds).
