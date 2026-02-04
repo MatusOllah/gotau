@@ -6,19 +6,18 @@ import (
 	"strings"
 )
 
-//TODO: v5???
-
 // Envelope represents a volume envelope.
 type Envelope struct {
 	P1 EnvelopeValue // P1 is the fade-in start offset (in milliseconds).
 	P2 EnvelopeValue // P2 is the fade-in end offset (in milliseconds).
 	P3 EnvelopeValue // P3 is the decay start offset (in milliseconds).
-	V1 EnvelopeValue // V1 is the volume at P2 (in percentage).
-	V2 EnvelopeValue // V2 is the volume at P3 (in percentage).
-	V3 EnvelopeValue // V3 is the volume at P4 (in percentage).
-	V4 EnvelopeValue // V4 is the volume at P5 (in percentage).
+	V1 EnvelopeValue // V1 is the volume at P1 (in %).
+	V2 EnvelopeValue // V2 is the volume at P2 (in %).
+	V3 EnvelopeValue // V3 is the volume at P3 (in %).
+	V4 EnvelopeValue // V4 is the volume at P4 (in %).
 	P4 EnvelopeValue // P4 is the sustain end offset (in milliseconds).
 	P5 EnvelopeValue // P5 is the fade-out end offset (in milliseconds).
+	V5 EnvelopeValue // V5 is the volume at P5 (in %).
 }
 
 // EnvelopeValue represents a single value in an envelope, which can be either
@@ -29,7 +28,7 @@ type EnvelopeValue struct {
 }
 
 // Env is shorthand for &Envelope{...}.
-func Env(p1, p2, p3, v1, v2, v3, v4, p4, p5 float32) *Envelope {
+func Env(p1, p2, p3, v1, v2, v3, v4, p4, p5, v5 float32) *Envelope {
 	return &Envelope{
 		P1: EnvelopeValue{Value: p1},
 		P2: EnvelopeValue{Value: p2},
@@ -40,6 +39,7 @@ func Env(p1, p2, p3, v1, v2, v3, v4, p4, p5 float32) *Envelope {
 		V4: EnvelopeValue{Value: v4},
 		P4: EnvelopeValue{Value: p4},
 		P5: EnvelopeValue{Value: p5},
+		V5: EnvelopeValue{Value: v5},
 	}
 }
 
@@ -61,8 +61,8 @@ func ParseEnvelope(s string) (*Envelope, error) {
 	if len(parts) < 7 {
 		return nil, fmt.Errorf("envelope string must contain at least 7 values, got %d", len(parts))
 	}
-	if len(parts) > 10 {
-		return nil, fmt.Errorf("envelope string must contain at most 9 values, got %d", len(parts))
+	if len(parts) > 11 {
+		return nil, fmt.Errorf("envelope string must contain at most 10 values, got %d", len(parts))
 	}
 
 	vals := make([]EnvelopeValue, len(parts))
@@ -84,15 +84,15 @@ func ParseEnvelope(s string) (*Envelope, error) {
 		V4: vals[6],
 	}
 
-	if len(vals) == 8 {
+	if len(vals) >= 8 {
 		env.P4 = vals[7]
 	}
-	if len(vals) == 9 {
-		env.P4 = vals[7]
+	if len(vals) >= 9 {
 		env.P5 = vals[8]
 	}
-
-	// ignore 10th value
+	if len(vals) >= 10 {
+		env.V5 = vals[9]
+	}
 
 	return env, nil
 }

@@ -17,8 +17,8 @@ func TestParseEnvelope(t *testing.T) {
 	}{
 		{
 			name:        "ValidBasic",
-			s:           "5,35,0,100,100,0,0,0,0",
-			expectedEnv: ust.Env(5, 35, 0, 100, 100, 0, 0, 0, 0),
+			s:           "5,35,0,100,100,0,0,0,0,0",
+			expectedEnv: ust.Env(5, 35, 0, 100, 100, 0, 0, 0, 0, 0),
 			expectErr:   false,
 		},
 		{
@@ -32,6 +32,12 @@ func TestParseEnvelope(t *testing.T) {
 			s:           "1,2,3,4",
 			expectErr:   true,
 			errContains: "must contain at least 7 values",
+		},
+		{
+			name:        "Invalid_TooManyValues",
+			s:           "1,2,3,4,5,6,7,8,9,0,3,9",
+			expectErr:   true,
+			errContains: "must contain at most 10 values",
 		},
 		{
 			name:        "Invalid_EmptyString",
