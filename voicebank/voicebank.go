@@ -444,6 +444,7 @@ type LookupConfig struct {
 }
 
 //TODO: CVVC / VCCV, presamp.ini, maybe also a custom lyric resolve text/template thingie
+//TODO: refactor this using interface
 
 // Lookup looks up an [OtoEntry] for the given [LookupConfig].
 //
