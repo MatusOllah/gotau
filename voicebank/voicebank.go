@@ -16,11 +16,11 @@ import (
 	_ "github.com/MatusOllah/resona/codec/au"
 	_ "github.com/MatusOllah/resona/codec/qoa"
 	_ "github.com/MatusOllah/resona/codec/wav"
-	"github.com/go-ini/ini"
 	"gitlab.com/gomidi/midi/v2"
 	_ "golang.org/x/image/bmp"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/transform"
+	"gopkg.in/ini.v1"
 )
 
 // InstallInfo represents metadata about installer voicebanks (i.e. install.txt).

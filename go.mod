@@ -7,12 +7,12 @@ require (
 	github.com/MatusOllah/resona v1.1.0
 	github.com/MatusOllah/slicestrconv v1.1.0
 	github.com/davecgh/go-spew v1.1.1
-	github.com/go-ini/ini v1.67.0
-	github.com/stretchr/testify v1.10.0
-	gitlab.com/gomidi/midi/v2 v2.3.6
-	golang.org/x/image v0.34.0
-	golang.org/x/net v0.0.0-20201021035429-f5854403a974
-	golang.org/x/text v0.32.0
+	github.com/stretchr/testify v1.11.1
+	gitlab.com/gomidi/midi/v2 v2.3.20
+	golang.org/x/image v0.35.0
+	golang.org/x/net v0.49.0
+	golang.org/x/text v0.33.0
+	gopkg.in/ini.v1 v1.67.1
 )
 
 require (

@@ -9,9 +9,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/go-ini/ini"
 	"gitlab.com/gomidi/midi/v2"
 	"golang.org/x/net/html/charset"
+	"gopkg.in/ini.v1"
 )
 
 var noteRe *regexp.Regexp = regexp.MustCompile(`#\d+`)

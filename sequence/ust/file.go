@@ -1,7 +1,7 @@
 package ust
 
 import (
-	"github.com/go-ini/ini"
+	"gopkg.in/ini.v1"
 )
 
 // File represents a parsed UST file.
