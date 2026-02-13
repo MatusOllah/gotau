@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/MatusOllah/enczip/zip"
+	"github.com/SladkyCitron/enczip/zip"
 	"github.com/davecgh/go-spew/spew"
 
-	"github.com/MatusOllah/gotau/voicebank"
+	"github.com/SladkyCitron/gotau/voicebank"
 	"golang.org/x/text/encoding/japanese"
 )
 

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/MatusOllah/gotau/sequence/ust"
+	"github.com/SladkyCitron/gotau/sequence/ust"
 	"github.com/stretchr/testify/assert"
 )
 

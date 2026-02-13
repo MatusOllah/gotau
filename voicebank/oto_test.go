@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/MatusOllah/gotau/voicebank"
+	"github.com/SladkyCitron/gotau/voicebank"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/text/encoding/japanese"
 )

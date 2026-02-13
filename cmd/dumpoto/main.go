@@ -5,10 +5,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/MatusOllah/enczip/zip"
+	"github.com/SladkyCitron/enczip/zip"
 
-	"github.com/MatusOllah/gotau/sequence/ust"
-	"github.com/MatusOllah/gotau/voicebank"
+	"github.com/SladkyCitron/gotau/sequence/ust"
+	"github.com/SladkyCitron/gotau/voicebank"
 	"golang.org/x/text/encoding/japanese"
 )
 

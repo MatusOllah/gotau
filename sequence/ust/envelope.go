@@ -84,6 +84,7 @@ func ParseEnvelope(s string) (*Envelope, error) {
 		V4: vals[6],
 	}
 
+	env.P4.Auto, env.P5.Auto, env.V5.Auto = true, true, true
 	if len(vals) >= 8 {
 		env.P4 = vals[7]
 	}

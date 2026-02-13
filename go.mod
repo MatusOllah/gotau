@@ -1,11 +1,11 @@
-module github.com/MatusOllah/gotau
+module github.com/SladkyCitron/gotau
 
 go 1.24.2
 
 require (
-	github.com/MatusOllah/enczip v1.0.0
-	github.com/MatusOllah/resona v1.1.0
-	github.com/MatusOllah/slicestrconv v1.1.0
+	github.com/SladkyCitron/enczip v1.1.0
+	github.com/SladkyCitron/resona v1.2.0
+	github.com/SladkyCitron/slicestrconv v1.2.0
 	github.com/davecgh/go-spew v1.1.1
 	github.com/stretchr/testify v1.11.1
 	gitlab.com/gomidi/midi/v2 v2.3.20

@@ -12,10 +12,10 @@ import (
 
 	_ "image/png"
 
-	"github.com/MatusOllah/resona/codec"
-	_ "github.com/MatusOllah/resona/codec/au"
-	_ "github.com/MatusOllah/resona/codec/qoa"
-	_ "github.com/MatusOllah/resona/codec/wav"
+	"github.com/SladkyCitron/resona/codec"
+	_ "github.com/SladkyCitron/resona/codec/au"
+	_ "github.com/SladkyCitron/resona/codec/qoa"
+	_ "github.com/SladkyCitron/resona/codec/wav"
 	"gitlab.com/gomidi/midi/v2"
 	_ "golang.org/x/image/bmp"
 	"golang.org/x/text/encoding"
@@ -106,13 +106,13 @@ type CharacterSample struct {
 // for decoding audio files. Additional audio codecs must
 // be imported separately. For example, to load a MP3 file, it suffices to have
 //
-//	import _ "github.com/MatusOllah/resona/codec/mp3"
+//	import _ "github.com/SladkyCitron/resona/codec/mp3"
 //
 // either in the program's package or somewhere in the import section.
 //
 // Returns an error if the file cannot be opened or decoded with the available codecs.
 //
-// [Resona]: https://github.com/MatusOllah/resona
+// [Resona]: https://github.com/SladkyCitron/resona
 func (s *CharacterSample) Decode(fsys fs.FS) error {
 	f, err := fsys.Open(s.Path)
 	if err != nil {

@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/MatusOllah/gotau/umath"
-	"github.com/MatusOllah/slicestrconv"
+	"github.com/SladkyCitron/gotau/umath"
+	"github.com/SladkyCitron/slicestrconv"
 )
 
 // PitchBendMode represents a pitch bend segment interpolation mode.
