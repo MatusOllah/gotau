@@ -2,7 +2,6 @@ package ust
 
 import (
 	"fmt"
-	"math"
 	"strconv"
 	"strings"
 
@@ -127,16 +126,6 @@ func ParsePitchBend(typ, start, pbs, pbw, pby, pbm string) (pb *PitchBend, err e
 		pb.Modes = append(pb.Modes, mode)
 	}
 
-	// normalize missing PBY, default to 0
-	if len(pb.Widths) > 0 && len(pb.Ys) == 0 {
-		pb.Ys = []float32{0}
-	}
-
-	// normalize PBM, default to sine
-	for len(pb.Modes) < len(pb.Ys) {
-		pb.Modes = append(pb.Modes, PitchBendModeSine)
-	}
-
 	return pb, nil
 }
 
@@ -155,61 +144,4 @@ func (pb *PitchBend) parseStart(s string) error {
 	}
 	pb.Start = umath.XY[float32]{X: float32(x), Y: float32(y)}
 	return nil
-}
-
-// Curve computes a curve from the pitch bend data.
-func (pb *PitchBend) Curve() []umath.XY[float32] {
-	const samplesPerSegment = 10
-	curve := []umath.XY[float32]{}
-	prevX, prevY := pb.Start.X, pb.Start.Y
-
-	// Handle cases where we have incomplete data
-	segmentCount := iMin(len(pb.Widths), len(pb.Ys))
-	for i := range segmentCount {
-		width := pb.Widths[i]
-		endY := pb.Ys[i]
-		endX := prevX + width
-
-		mode := PitchBendModeLinear
-		if i < len(pb.Modes) {
-			mode = pb.Modes[i]
-		}
-
-		for j := 0; j <= samplesPerSegment; j++ {
-			t := float32(j) / float32(samplesPerSegment)
-			var y float32
-
-			switch mode {
-			case PitchBendModeLinear:
-				y = prevY*(1-t) + endY*t
-			case PitchBendModeSine:
-				y = prevY + (endY-prevY)*(0.5-0.5*float32(math.Cos(math.Pi*float64(t))))
-			case PitchBendModeRigid:
-				y = prevY
-			case PitchBendModeJump:
-				if j == 0 {
-					y = prevY
-				} else {
-					y = endY
-				}
-			default:
-				y = prevY // fallback to flat segment
-			}
-
-			x := prevX + width*t
-			curve = append(curve, umath.XY[float32]{X: x, Y: y})
-		}
-
-		prevX = endX
-		prevY = endY
-	}
-
-	return curve
-}
-
-func iMin(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }

@@ -33,6 +33,8 @@ func (f *File) Sequence() sequence.Sequence {
 			continue
 		}
 
+		msPerTick := 60000 / (f.Settings.Tempo * float32(seq.Metadata.Resolution))
+
 		seq.Notes = append(seq.Notes, sequence.Note{
 			Position:     position,
 			Duration:     note.Length,
@@ -42,8 +44,8 @@ func (f *File) Sequence() sequence.Sequence {
 			PreUtterance: note.PreUtterance,
 			VoiceOverlap: note.VoiceOverlap,
 			StartPoint:   note.StartPoint,
-			Envelope:     envelopeToCurve(note.Envelope, (60000/(f.Settings.Tempo*float32(seq.Metadata.Resolution)))*float32(note.Length)),
-			PitchBend:    pitchBendToCurve(note.PitchBend),
+			Envelope:     envelopeToCurve(note.Envelope, msPerTick*float32(note.Length)),
+			PitchBend:    pitchBendToCurve(note.PitchBend, msPerTick),
 		})
 		position += note.Length
 	}
@@ -102,6 +104,40 @@ func envelopeToCurve(env *Envelope, noteDurMs float32) sequence.Curve {
 	return points
 }
 
-func pitchBendToCurve(pb *PitchBend) sequence.Curve {
-	return sequence.Curve{}
+func pitchBendToCurve(pb *PitchBend, msPerTick float32) sequence.Curve {
+	if pb == nil {
+		return sequence.Curve{}
+	}
+	if (pb.Start.X == 0 && pb.Start.Y == 0) || len(pb.Widths) == 0 {
+		return sequence.Curve{}
+	}
+
+	// PBY defaults to 0 for every segment
+	for len(pb.Ys) < len(pb.Widths) {
+		pb.Ys = append(pb.Ys, 0)
+	}
+
+	// PBM defaults to sine
+	for len(pb.Modes) < len(pb.Widths) {
+		pb.Modes = append(pb.Modes, PitchBendModeSine)
+	}
+
+	points := sequence.Curve{}
+
+	x := pb.Start.X
+	y := pb.Start.Y
+	for i := range pb.Widths {
+		points = append(points, sequence.CurvePoint{
+			XY:     umath.XY[float32]{X: x * msPerTick, Y: y},
+			Interp: convertPBM(pb.Modes[i]),
+		})
+		x += pb.Widths[i]
+		y = pb.Ys[i]
+	}
+
+	return points
+}
+
+func convertPBM(mode PitchBendMode) sequence.CurveInterpolation {
+	return sequence.CurveInterpolation(mode) // this is enough for now
 }

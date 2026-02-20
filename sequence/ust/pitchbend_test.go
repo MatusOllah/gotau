@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/SladkyCitron/gotau/sequence/ust"
-	"github.com/SladkyCitron/gotau/umath"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -77,111 +76,4 @@ func TestParsePitchBend_EmptyFields(t *testing.T) {
 	assert.Equal(t, 5, pb.Type)
 	assert.Equal(t, float32(0.0), pb.Start.X)
 	assert.Equal(t, float32(0.0), pb.Start.Y)
-}
-
-func TestPitchBend_Curve(t *testing.T) {
-	tests := []struct {
-		name     string
-		pb       *ust.PitchBend
-		expected int
-		check    func(t *testing.T, curve []umath.XY[float32])
-	}{
-		{
-			name: "LinearSegment",
-			pb: &ust.PitchBend{
-				Start:  umath.XY[float32]{X: 0, Y: 0},
-				Widths: []float32{10},
-				Ys:     []float32{10},
-				Modes:  []ust.PitchBendMode{ust.PitchBendModeLinear},
-			},
-			expected: 11,
-			check: func(t *testing.T, curve []umath.XY[float32]) {
-				assert.Equal(t, umath.XY[float32]{X: 0, Y: 0}, curve[0])
-				assert.Equal(t, umath.XY[float32]{X: 10, Y: 10}, curve[len(curve)-1])
-			},
-		},
-		{
-			name: "RigidSegment",
-			pb: &ust.PitchBend{
-				Start:  umath.XY[float32]{X: 5, Y: 3},
-				Widths: []float32{10},
-				Ys:     []float32{7},
-				Modes:  []ust.PitchBendMode{ust.PitchBendModeRigid},
-			},
-			expected: 11,
-			check: func(t *testing.T, curve []umath.XY[float32]) {
-				for _, pt := range curve {
-					assert.Equal(t, float32(3.0), pt.Y)
-				}
-			},
-		},
-		{
-			name: "JumpSegment",
-			pb: &ust.PitchBend{
-				Start:  umath.XY[float32]{X: 0, Y: 0},
-				Widths: []float32{10},
-				Ys:     []float32{5},
-				Modes:  []ust.PitchBendMode{ust.PitchBendModeJump},
-			},
-			expected: 11,
-			check: func(t *testing.T, curve []umath.XY[float32]) {
-				assert.Equal(t, float32(0.0), curve[0].Y)
-				assert.Equal(t, float32(5.0), curve[1].Y)
-			},
-		},
-		{
-			name: "SineSegment",
-			pb: &ust.PitchBend{
-				Start:  umath.XY[float32]{X: 0, Y: 0},
-				Widths: []float32{10},
-				Ys:     []float32{10},
-				Modes:  []ust.PitchBendMode{ust.PitchBendModeSine},
-			},
-			expected: 11,
-			check: func(t *testing.T, curve []umath.XY[float32]) {
-				assert.Greater(t, curve[5].Y, float32(4.0))
-			},
-		},
-		{
-			name: "DefaultSegment",
-			pb: &ust.PitchBend{
-				Start:  umath.XY[float32]{X: 0, Y: 0},
-				Widths: []float32{10},
-				Ys:     []float32{10},
-				Modes:  []ust.PitchBendMode{},
-			},
-			expected: 11,
-			check: func(t *testing.T, curve []umath.XY[float32]) {
-				assert.Equal(t, umath.XY[float32]{X: 0, Y: 0}, curve[0])
-				assert.Equal(t, umath.XY[float32]{X: 10, Y: 10}, curve[len(curve)-1])
-			},
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			curve := test.pb.Curve()
-			assert.Len(t, curve, test.expected)
-			test.check(t, curve)
-		})
-	}
-}
-
-func BenchmarkPitchBend_Curve(b *testing.B) {
-	pb := &ust.PitchBend{
-		Start:  umath.XY[float32]{X: 0, Y: 0},
-		Widths: make([]float32, 100),
-		Ys:     make([]float32, 100),
-		Modes:  make([]ust.PitchBendMode, 100),
-	}
-
-	for i := range 100 {
-		pb.Widths[i] = 10
-		pb.Ys[i] = float32(i)
-		pb.Modes[i] = ust.PitchBendModeLinear
-	}
-
-	for b.Loop() {
-		_ = pb.Curve()
-	}
 }
