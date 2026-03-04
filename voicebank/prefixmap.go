@@ -224,55 +224,17 @@ func (pm PrefixMap) Encode(w io.Writer, opts ...PrefixMapOption) error {
 	return nil
 }
 
+var (
+	noteNamesSharps = [...]string{"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"}
+	noteNamesFlats  = [...]string{"C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"}
+)
+
 func formatNote(note midi.Note, sharps bool) string {
 	var name string
-	switch note % 12 {
-	case 0:
-		name = "C"
-	case 1:
-		if sharps {
-			name = "C#"
-		} else {
-			name = "Db"
-		}
-	case 2:
-		name = "D"
-	case 3:
-		if sharps {
-			name = "D#"
-		} else {
-			name = "Eb"
-		}
-	case 4:
-		name = "E"
-	case 5:
-		name = "F"
-	case 6:
-		if sharps {
-			name = "F#"
-		} else {
-			name = "Gb"
-		}
-	case 7:
-		name = "G"
-	case 8:
-		if sharps {
-			name = "G#"
-		} else {
-			name = "Ab"
-		}
-	case 9:
-		name = "A"
-	case 10:
-		if sharps {
-			name = "A#"
-		} else {
-			name = "Bb"
-		}
-	case 11:
-		name = "B"
-	default:
-		panic("unreachable")
+	if sharps {
+		name = noteNamesSharps[note%12]
+	} else {
+		name = noteNamesFlats[note%12]
 	}
 	return name + strconv.FormatInt(int64(note/12), 10)
 }
