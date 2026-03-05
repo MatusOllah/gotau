@@ -128,7 +128,7 @@ func TestPrefixMapRoundTrip(t *testing.T) {
 		voicebank.PrefixMapWithSort(func(a, b midi.Note) int {
 			return cmp.Compare(a, b)
 		}),
-		voicebank.PrefixMapWithSharps(),
+		voicebank.PrefixMapWithNoteFormat(voicebank.NoteFormatSharps),
 	)
 	if err != nil {
 		t.Fatal(err)
