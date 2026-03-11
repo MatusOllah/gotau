@@ -25,10 +25,7 @@ func (s *scheduler) pop(seconds float64) []sequence.Note {
 	var ready []sequence.Note
 	ticks := s.secondsToTicks(seconds)
 	i := 0
-	for len(s.queue) > 0 {
-		if ticks <= 0 {
-			break
-		}
+	for i < len(s.queue) && ticks > 0 {
 		note := s.queue[i]
 		ticks -= note.Duration
 		ready = append(ready, note)
