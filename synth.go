@@ -19,8 +19,9 @@ type Synth struct {
 func New(vb *voicebank.Voicebank, seq sequence.Sequence) *Synth {
 	s := &Synth{
 		sched: &scheduler{tpqn: seq.Metadata.Resolution, bpm: seq.Metadata.Tempo},
-		sr:    44100, // sample rate temporary hardcoded
 		vb:    vb,
+		sr:    44100, // sample rate temporary hardcoded
+		buf:   make([]float32, 0, 8192),
 	}
 	s.Enqueue(seq.Notes...)
 	return s
@@ -60,6 +61,7 @@ func (s *Synth) ReadSamples(p []float32) (int, error) {
 			}
 
 			// render note
+			s.debugLog("note", note)
 			buf := make([]float32, int(s.sched.ticksToSeconds(note.Duration)*float64(s.sr)))
 			freq := 440.0 * math.Pow(2, (float64(note.Note)-69)/12)
 			step := 2 * math.Pi * freq / float64(s.sr)
