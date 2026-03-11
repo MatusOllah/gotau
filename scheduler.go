@@ -14,10 +14,10 @@ type scheduler struct {
 }
 
 func (s *scheduler) enqueue(notes ...sequence.Note) {
-	sort.Slice(notes, func(i, j int) bool {
-		return notes[i].Position < notes[j].Position
-	})
 	s.queue = append(s.queue, notes...)
+	sort.Slice(s.queue, func(i, j int) bool {
+		return s.queue[i].Position < s.queue[j].Position
+	})
 }
 
 // pop returns and dequeues all notes that are ready to be rendered up to seconds.
