@@ -40,7 +40,7 @@ func (f *File) Sequence() sequence.Sequence {
 			Duration:     note.Length,
 			Lyric:        note.Lyric,
 			Note:         note.NoteNum,
-			Intensity:    note.Intensity,
+			Intensity:    note.Intensity / 100,
 			PreUtterance: note.PreUtterance,
 			VoiceOverlap: note.VoiceOverlap,
 			StartPoint:   note.StartPoint,
