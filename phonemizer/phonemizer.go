@@ -1,4 +1,5 @@
-// Package phonemizer implements the lyric to alias resolution and phonemization logic.
+// Package phonemizer implements the lyric to alias resolution and phonemization logic
+// and provides multiple ready-to-use implementations.
 package phonemizer
 
 import (
