@@ -10,7 +10,7 @@ var _ Phonemizer = (*Default)(nil)
 type Default struct{}
 
 // Resolve satisfies the [Phonemizer] interface.
-func (_ *Default) Resolve(cfg ResolveConfig) iter.Seq[string] {
+func (p *Default) Resolve(cfg ResolveConfig) iter.Seq[string] {
 	return func(yield func(string) bool) {
 		yield(cfg.Lyric)
 	}
