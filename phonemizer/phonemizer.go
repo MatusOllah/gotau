@@ -29,3 +29,27 @@ type ResolveConfig struct {
 	// Note is the MIDI note. It's used for prefix.map lookup.
 	Note midi.Note
 }
+
+// MultiPhonemizer returns a [Phonemizer] that's the logical concatenation
+// of the provided input phonemizers. They're called sequentially.
+func MultiPhonemizer(phonemizers ...Phonemizer) Phonemizer {
+	p := make([]Phonemizer, len(phonemizers))
+	copy(p, phonemizers)
+	return &multiPhonemizer{phones: p}
+}
+
+type multiPhonemizer struct {
+	phones []Phonemizer
+}
+
+func (mp *multiPhonemizer) Resolve(cfg ResolveConfig) iter.Seq[string] {
+	return func(yield func(string) bool) {
+		for _, p := range mp.phones {
+			for alias := range p.Resolve(cfg) {
+				if !yield(alias) {
+					return
+				}
+			}
+		}
+	}
+}
