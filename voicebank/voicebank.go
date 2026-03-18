@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"image"
 	"io/fs"
-	"slices"
 	"strings"
 
 	_ "image/png"
@@ -16,7 +15,6 @@ import (
 	_ "github.com/SladkyCitron/resona/codec/au"
 	_ "github.com/SladkyCitron/resona/codec/qoa"
 	_ "github.com/SladkyCitron/resona/codec/wav"
-	"gitlab.com/gomidi/midi/v2"
 	_ "golang.org/x/image/bmp"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/transform"
@@ -429,92 +427,4 @@ func normalizeCRLF(s string) string {
 	s = strings.ReplaceAll(s, "\r\n", "\n")
 	s = strings.ReplaceAll(s, "\r", "\n")
 	return s
-}
-
-// LookupConfig represents the configuration for passing into [Voicebank.Lookup].
-type LookupConfig struct {
-	// Lyric is the main lyric.
-	Lyric string
-
-	// PrevLyric is the previous lyric.
-	PrevLyric string
-
-	// Note is the MIDI note. It's used for prefix.map lookup.
-	Note midi.Note
-}
-
-//TODO: CVVC / VCCV, presamp.ini, maybe also a custom lyric resolve text/template thingie
-//TODO: refactor this using interface
-
-// Lookup looks up an [OtoEntry] for the given [LookupConfig].
-//
-// It returns the first matching entry found based on the following order:
-//
-//  1. prefix.map combo with VCV prefix (if prefix.map and [LookupConfig.PrevLyric] are present)
-//  2. prefix.map combo (if prefix.map is present)
-//  3. raw lyric with VCV prefix (if [LookupConfig.PrevLyric] is present)
-//  4. raw lyric
-//  5. whitespace-trimmed lyric with VCV prefix (if [LookupConfig.PrevLyric] is present)
-//  6. whitespace-trimmed lyric
-//
-// If no matching entry is found in the voicebank, it returns an empty [OtoEntry] and false.
-func (vb *Voicebank) Lookup(cfg LookupConfig) (entry OtoEntry, ok bool) {
-	combos := vb.getAliasCombos(cfg)
-
-	for _, combo := range combos {
-		if entry, ok = vb.Oto.Get(combo); ok {
-			return
-		}
-	}
-	return OtoEntry{}, false
-}
-
-func getLastVowel(lyric string) string {
-	for i := len(lyric) - 1; i >= 0; i-- {
-		switch r := rune(lyric[i]); r {
-		case 'a', 'e', 'i', 'o', 'u',
-			'A', 'E', 'I', 'O', 'U',
-			'あ', 'え', 'い', 'お', 'う',
-			'ア', 'エ', 'イ', 'オ', 'ウ':
-			return string(r)
-		}
-	}
-	return ""
-}
-
-func (vb *Voicebank) getAliasCombos(cfg LookupConfig) []string {
-	var combos []string
-
-	vowel := ""
-	if cfg.PrevLyric != "" {
-		vowel = getLastVowel(cfg.PrevLyric)
-	}
-
-	vcvPrefix := "- " + cfg.Lyric
-	if vowel != "" {
-		vcvPrefix = vowel + " " + cfg.Lyric
-	}
-
-	// prefix.map
-	if vb.PrefixMap != nil {
-		if entry, ok := vb.PrefixMap[cfg.Note]; ok {
-			combos = append(combos, entry.Prefix+vcvPrefix+entry.Suffix) // VCV
-			combos = append(combos, entry.Prefix+cfg.Lyric+entry.Suffix) // CV
-		}
-	}
-
-	// VCV raw lyric
-	combos = append(combos, vcvPrefix)
-
-	// CV raw lyric
-	combos = append(combos, cfg.Lyric)
-
-	// trimmed variants
-	t := strings.TrimSpace(cfg.Lyric)
-	if t != cfg.Lyric {
-		combos = append(combos, getLastVowel(cfg.PrevLyric)+" "+t) // VCV
-		combos = append(combos, t)                                 // CV
-	}
-
-	return slices.Compact(combos)
 }

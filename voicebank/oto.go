@@ -170,7 +170,7 @@ func DecodeOto(r io.Reader, opts ...OtoOption) (Oto, error) {
 	return oto, scan.Err()
 }
 
-//TODO: optimize with binary search and lookup table; also gotta make Oto a struct with a slice inside instead of just a slice
+//TODO: optimize with binary search and lookup table
 
 // Get retrieves an [OtoEntry] by its phoneme alias.
 func (o Oto) Get(alias string) (_ OtoEntry, ok bool) {

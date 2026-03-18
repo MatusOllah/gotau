@@ -8,6 +8,8 @@ import (
 	"gitlab.com/gomidi/midi/v2"
 )
 
+//TODO: CVVC / VCCV, presamp.ini, maybe also a custom lyric resolve text/template thingie
+
 // Phonemizer is the interface that is implemented by phonemizers and wraps the basic Resolve method.
 // It resolves a lyric into phoneme alias candidates and returns an iterator over them.
 //
