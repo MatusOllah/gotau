@@ -24,3 +24,20 @@ func TestVCV(t *testing.T) {
 
 	assert.Equal(t, want, got)
 }
+
+func TestVCV_PrevLyric(t *testing.T) {
+	p := &phonemizer.VCV{PrefixMap: voicebank.PrefixMap{60: voicebank.Prefix{"pre", "suf"}}}
+	got := slices.Collect(p.Resolve(phonemizer.ResolveConfig{
+		PrevLyric: "mi",
+		Lyric:     "ku ",
+		Note:      60,
+	}))
+
+	want := []string{
+		"prei ku suf", // prefix.map
+		"i ku",        // trimmed
+		"i ku ",       // raw
+	}
+
+	assert.Equal(t, want, got)
+}
