@@ -12,7 +12,13 @@ var _ Phonemizer = (*VCV)(nil)
 
 // VCV is a simple vowel+consonant+vowel (VCV) [Phonemizer].
 //
-// It emits candidates based on the following order:
+// It extracts the vowel from the end of the previous lyric and assumes lyrics
+// contain explicit trailing vowel characters (e.g. romaji like "ka", "shi", "to").
+// It does not support Japanese kana characters since the vowel
+// cannot be determined from the last character. For kana-based Japanese voicebanks,
+// use [JapaneseVCV].
+//
+// [VCV] emits candidates based on the following order:
 //
 //  1. prefix.map + lyric with VCV prefix (if [VCV.PrefixMap] and [ResolveConfig.PrevLyric] are present)
 //  2. whitespace-trimmed lyric with VCV prefix (if [ResolveConfig.PrevLyric] is present)
@@ -23,12 +29,14 @@ type VCV struct {
 	PrefixMap voicebank.PrefixMap
 }
 
+var lastVowelRe = regexp.MustCompile(`(?i)[aeiouyあいうえおアイウエオ]$`)
+
 // Resolve satisfies the [Phonemizer] interface.
 func (p *VCV) Resolve(cfg ResolveConfig) iter.Seq[string] {
 	return func(yield func(string) bool) {
 		vowel := ""
 		if cfg.PrevLyric != "" {
-			vowel = getLastVowel(cfg.PrevLyric)
+			vowel = lastVowelRe.FindString(cfg.PrevLyric)
 		}
 
 		vcvPrefix := "- "
@@ -54,10 +62,4 @@ func (p *VCV) Resolve(cfg ResolveConfig) iter.Seq[string] {
 		// no need to check yield result; this is the final candidate
 		yield(vcvCombo)
 	}
-}
-
-var lastVowelRe = regexp.MustCompile(`(?i)[aeiouyあいうえおアイウエオ]$`)
-
-func getLastVowel(lyric string) string {
-	return lastVowelRe.FindString(lyric)
 }
