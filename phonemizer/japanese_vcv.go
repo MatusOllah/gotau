@@ -3,6 +3,7 @@ package phonemizer
 import (
 	"iter"
 	"strings"
+	"unicode/utf8"
 
 	"golang.org/x/text/unicode/norm"
 
@@ -63,11 +64,8 @@ func (p *JapaneseVCV) Resolve(cfg ResolveConfig) iter.Seq[string] {
 }
 
 func getLastKanaVowel(lyric string) string {
-	r := []rune(lyric)
-	if len(r) == 0 {
-		return ""
-	}
-	switch r[len(r)-1] {
+	r, _ := utf8.DecodeLastRuneInString(lyric)
+	switch r {
 	case 'a', 'A',
 		'ぁ', 'あ', 'か', 'が', 'さ', 'ざ', 'た', 'だ', 'な', 'は', 'ば', 'ぱ', 'ま', 'ゃ', 'や', 'ら', 'わ',
 		'ァ', 'ア', 'カ', 'ガ', 'サ', 'ザ', 'タ', 'ダ', 'ナ', 'ハ', 'バ', 'パ', 'マ', 'ャ', 'ヤ', 'ラ', 'ワ':
@@ -91,7 +89,7 @@ func getLastKanaVowel(lyric string) string {
 	case 'n', 'N', 'ん', 'ン':
 		return "n"
 	case 'ー':
-		return getLastKanaVowel(string(r[:len(r)-1]))
+		return getLastKanaVowel(lyric[:len(lyric)-1])
 	default:
 		return ""
 	}
