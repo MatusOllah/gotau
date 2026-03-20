@@ -1,7 +1,7 @@
 github.com/SladkyCitron/enczip v1.1.0 h1:GnhZ+5S1taBpBOZ/cJYNuAEoAJ81CR6Tbt598ZdbPWs=
 github.com/SladkyCitron/enczip v1.1.0/go.mod h1:Yaemp8wQGVMRW6SkRXOPNTanrasCX4KATtO3sW8wwDI=
-github.com/SladkyCitron/resona v1.2.0 h1:ZOuYoi8JuJEkdztp4IC85iSIIowK/n/X6W0M6f2u7u8=
-github.com/SladkyCitron/resona v1.2.0/go.mod h1:48rYvtxjOEvvI84AgrMNlPELTrnGrA8fNx359MP/SC8=
+github.com/SladkyCitron/resona v1.2.1 h1:HxRLYjPwYON6wSTAsejV/kVkXXYAVHX1OGc9B/EHlt8=
+github.com/SladkyCitron/resona v1.2.1/go.mod h1:48rYvtxjOEvvI84AgrMNlPELTrnGrA8fNx359MP/SC8=
 github.com/SladkyCitron/slicestrconv v1.2.0 h1:Ud9aPvofk7V/YKmkQwtVgrFqEq49PB2yXCUIvnbyPlw=
 github.com/SladkyCitron/slicestrconv v1.2.0/go.mod h1:xI6/+K2+Plu5ENwWUAt4zSp8X9RadfHc7MGuHl34los=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
