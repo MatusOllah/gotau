@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"image"
 	"io/fs"
+	"path"
 	"strings"
 
 	_ "image/png"
@@ -405,14 +406,14 @@ func parseCharacterInfo(fsys fs.FS, cfg *voicebankConfig) (*CharacterInfo, error
 	return info, nil
 }
 
-func parseOtoIni(fsys fs.FS, path string, enc encoding.Encoding) (Oto, error) {
-	f, err := fsys.Open(path)
+func parseOtoIni(fsys fs.FS, _path string, enc encoding.Encoding) (Oto, error) {
+	f, err := fsys.Open(_path)
 	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
 
-	oto, err := DecodeOto(f, OtoWithEncoding(enc))
+	oto, err := DecodeOto(f, OtoWithEncoding(enc), OtoWithDirectory(path.Dir(_path)))
 	if err != nil {
 		return nil, err
 	}
