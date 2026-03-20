@@ -172,6 +172,8 @@ type Voicebank struct {
 	// PrefixMap is the voicebank's prefix.map configuration.
 	// It is only valid if the prefix.map file is present.
 	PrefixMap PrefixMap
+
+	fsys fs.FS
 }
 
 type voicebankConfig struct {
@@ -244,7 +246,7 @@ func Open(fsys fs.FS, opts ...Option) (*Voicebank, error) {
 }
 
 func openNonInstaller(fsys fs.FS, cfg *voicebankConfig) (*Voicebank, error) {
-	vb := &Voicebank{}
+	vb := &Voicebank{fsys: fsys}
 
 	// character.txt
 	if fileExists(fsys, "character.txt") {
@@ -427,4 +429,9 @@ func normalizeCRLF(s string) string {
 	s = strings.ReplaceAll(s, "\r\n", "\n")
 	s = strings.ReplaceAll(s, "\r", "\n")
 	return s
+}
+
+// FS returns the voicebank's filesystem.
+func (vb *Voicebank) FS() fs.FS {
+	return vb.fsys
 }
