@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"path"
 	"strconv"
 	"strings"
 
@@ -16,6 +17,9 @@ import (
 type OtoEntry struct {
 	// Filename is the name of the audio file associated with this Oto entry.
 	Filename string
+
+	// Directory is the path to the directory where the oto.ini file and audio files are located.
+	Directory string
 
 	// Alias is the phoneme or alias associated with this Oto entry.
 	Alias string
@@ -36,6 +40,12 @@ type OtoEntry struct {
 	Overlap float32
 }
 
+// FilePath returns the file path to the audio file.
+func (e OtoEntry) FilePath() string {
+	// using path and not filepath because fs.FS uses forward slashes
+	return path.Join(e.Directory, e.Filename)
+}
+
 // Why does oto.ini and Oto (the audio thingie) have to have the same name...?! 😭
 // It makes things so confusing...
 //
@@ -49,6 +59,7 @@ type otoConfig struct {
 	encoding       encoding.Encoding
 	comment        rune
 	floatPrecision int
+	dir            string
 }
 
 // OtoOption represents an option for passing into oto.ini-related functions and methods.
@@ -77,6 +88,14 @@ func OtoWithFloatPrecision(prec int) OtoOption {
 
 	return func(cfg *otoConfig) {
 		cfg.floatPrecision = prec
+	}
+}
+
+// OtoWithDirectory specifies the path to the directory where the oto.ini file is to put
+// into the [OtoEntry.Directory] field when reading the oto.ini file.
+func OtoWithDirectory(dir string) OtoOption {
+	return func(cfg *otoConfig) {
+		cfg.dir = dir
 	}
 }
 
@@ -159,6 +178,7 @@ func DecodeOto(r io.Reader, opts ...OtoOption) (Oto, error) {
 
 		oto = append(oto, OtoEntry{
 			Filename:     filename,
+			Directory:    cfg.dir,
 			Alias:        alias,
 			Offset:       float32(offset),
 			Consonant:    float32(consonant),

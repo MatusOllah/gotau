@@ -20,11 +20,11 @@ ka.wav=か,50,100,-300,90,30
 empty_values.wav=a,,,,,
 `
 	want := voicebank.Oto{
-		{"a.wav", "a", 0, 120, -39, 80, 20},
-		{"shi.wav", "し", 10, 90, -200, 70, 25},
-		{"ka.wav", "か", 50, 100, -300, 90, 30},
-		{"あ.wav", "あ", 39, 110, -250, 85, 40},
-		{"empty_values.wav", "a", 0, 0, 0, 0, 0},
+		{"a.wav", "", "a", 0, 120, -39, 80, 20},
+		{"shi.wav", "", "し", 10, 90, -200, 70, 25},
+		{"ka.wav", "", "か", 50, 100, -300, 90, 30},
+		{"あ.wav", "", "あ", 39, 110, -250, 85, 40},
+		{"empty_values.wav", "", "a", 0, 0, 0, 0, 0},
 	}
 
 	oto, err := voicebank.DecodeOto(strings.NewReader(src), voicebank.OtoWithComment(';'))
@@ -39,9 +39,9 @@ func TestDecodeOtoShiftJIS(t *testing.T) {
 	src := "shi.wav=\x82\xb5,10,90,-200,70,25\nka.wav=\x82\xa9,50,100,-300,90,30\n\x82\xa0.wav=\x82\xa0,39,110,-250,85,40\n"
 
 	want := voicebank.Oto{
-		{"shi.wav", "し", 10, 90, -200, 70, 25},
-		{"ka.wav", "か", 50, 100, -300, 90, 30},
-		{"あ.wav", "あ", 39, 110, -250, 85, 40},
+		{"shi.wav", "", "し", 10, 90, -200, 70, 25},
+		{"ka.wav", "", "か", 50, 100, -300, 90, 30},
+		{"あ.wav", "", "あ", 39, 110, -250, 85, 40},
 	}
 
 	oto, err := voicebank.DecodeOto(strings.NewReader(src), voicebank.OtoWithEncoding(japanese.ShiftJIS))
@@ -70,12 +70,12 @@ func TestDecodeOtoMissingEqualSign(t *testing.T) {
 
 func TestOtoGet(t *testing.T) {
 	oto := voicebank.Oto{
-		{"shi.wav", "し", 10, 90, -200, 70, 25},
-		{"ka.wav", "か", 50, 100, -300, 90, 30},
-		{"あ.wav", "あ", 39, 110, -250, 85, 40},
+		{"shi.wav", "", "し", 10, 90, -200, 70, 25},
+		{"ka.wav", "", "か", 50, 100, -300, 90, 30},
+		{"あ.wav", "", "あ", 39, 110, -250, 85, 40},
 	}
 
-	want := voicebank.OtoEntry{"ka.wav", "か", 50, 100, -300, 90, 30}
+	want := voicebank.OtoEntry{"ka.wav", "", "か", 50, 100, -300, 90, 30}
 
 	entry, ok := oto.Get("か")
 	assert.True(t, ok)
@@ -88,9 +88,9 @@ func TestOtoGet(t *testing.T) {
 
 func TestOtoEncode(t *testing.T) {
 	oto := voicebank.Oto{
-		{"shi.wav", "し", 10, 90, -200, 70, 25},
-		{"ka.wav", "か", 50, 100, -300, 90, 30},
-		{"あ.wav", "あ", 39, 110, -250, 85, 40},
+		{"shi.wav", "", "し", 10, 90, -200, 70, 25},
+		{"ka.wav", "", "か", 50, 100, -300, 90, 30},
+		{"あ.wav", "", "あ", 39, 110, -250, 85, 40},
 	}
 
 	want := `shi.wav=し,10,90,-200,70,25
@@ -109,9 +109,9 @@ ka.wav=か,50,100,-300,90,30
 
 func TestOtoEncodeWithPrecision(t *testing.T) {
 	oto := voicebank.Oto{
-		{"shi.wav", "し", 10, 90, -200, 70, 25},
-		{"ka.wav", "か", 50, 100, -300, 90, 30},
-		{"あ.wav", "あ", 39, 110, -250, 85, 40},
+		{"shi.wav", "", "し", 10, 90, -200, 70, 25},
+		{"ka.wav", "", "か", 50, 100, -300, 90, 30},
+		{"あ.wav", "", "あ", 39, 110, -250, 85, 40},
 	}
 
 	want := `shi.wav=し,10.000,90.000,-200.000,70.000,25.000
@@ -151,7 +151,7 @@ ka.wav=か,50.000,100.000,-300.000,90.000,30.000
 
 func BenchmarkOtoEncode(b *testing.B) {
 	oto := voicebank.Oto{
-		{"あ.wav", "あ", 39, 110, -250, 85, 40},
+		{"あ.wav", "", "あ", 39, 110, -250, 85, 40},
 	}
 
 	for b.Loop() {
