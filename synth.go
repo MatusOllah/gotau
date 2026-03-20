@@ -10,7 +10,7 @@ import (
 	"github.com/SladkyCitron/resona/freq"
 )
 
-const startBufSize = 8192 // Size of initial allocation for buffer
+const startBufSize = 4096 // Size of initial allocation for buffer
 
 // Synth is the main voice synthsizer that renders notes into audio samples.
 type Synth struct {
