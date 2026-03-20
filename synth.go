@@ -10,6 +10,8 @@ import (
 	"github.com/SladkyCitron/resona/freq"
 )
 
+const startBufSize = 8192 // Size of initial allocation for buffer
+
 // Synth is the main voice synthsizer that renders notes into audio samples.
 type Synth struct {
 	sched *scheduler
@@ -23,9 +25,16 @@ func New(sr freq.Frequency, vb *voicebank.Voicebank) *Synth {
 		sched: &scheduler{},
 		vb:    vb,
 		sr:    int(sr.Hertz()),
-		buf:   make([]float32, 0, 8192),
+		buf:   make([]float32, 0, startBufSize),
 	}
 	return s
+}
+
+// Buffer controls memory allocation by the Synth.
+// It sets the internal buffer to use when rendering notes.
+// The contents of the buffer are ignored.
+func (s *Synth) Buffer(buf []float32) {
+	s.buf = buf[0:cap(buf)]
 }
 
 // SetResolution sets the timing resolution in ticks per quarter note (TPQN).
