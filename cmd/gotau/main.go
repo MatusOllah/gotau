@@ -12,6 +12,7 @@ import (
 	"github.com/SladkyCitron/resona/codec/wav"
 	"github.com/SladkyCitron/resona/freq"
 
+	"github.com/SladkyCitron/gotau/phonemizer"
 	"github.com/SladkyCitron/gotau/sequence/ust"
 	"github.com/SladkyCitron/gotau/voicebank"
 	"golang.org/x/text/encoding/japanese"
@@ -62,6 +63,7 @@ func main() {
 
 	println("loading synth")
 	synth := gotau.New(44100, vb)
+	synth.SetPhonemizer(&phonemizer.JapaneseVCV{PrefixMap: vb.PrefixMap})
 	synth.EnqueueSequence(seq)
 
 	outFile, err := os.Create(os.Args[3])
