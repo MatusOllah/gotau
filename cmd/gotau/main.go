@@ -55,7 +55,7 @@ func main() {
 
 	seq := ustFile.Sequence()
 
-	synth := gotau.New(vb, seq)
+	synth := gotau.New(44100, vb, seq)
 
 	outFile, err := os.Create(os.Args[3])
 	if err != nil {

@@ -7,6 +7,7 @@ import (
 
 	"github.com/SladkyCitron/gotau/sequence"
 	"github.com/SladkyCitron/gotau/voicebank"
+	"github.com/SladkyCitron/resona/freq"
 )
 
 type Synth struct {
@@ -16,11 +17,11 @@ type Synth struct {
 	buf   []float32
 }
 
-func New(vb *voicebank.Voicebank, seq sequence.Sequence) *Synth {
+func New(sr freq.Frequency, vb *voicebank.Voicebank, seq sequence.Sequence) *Synth {
 	s := &Synth{
 		sched: &scheduler{tpqn: seq.Metadata.Resolution, bpm: seq.Metadata.Tempo},
 		vb:    vb,
-		sr:    44100, // sample rate temporary hardcoded
+		sr:    int(sr.Hertz()),
 		buf:   make([]float32, 0, 8192),
 	}
 	s.Enqueue(seq.Notes...)
