@@ -10,6 +10,7 @@ import (
 	"github.com/SladkyCitron/resona/freq"
 )
 
+// Synth is the main voice synthsizer that renders notes into audio samples.
 type Synth struct {
 	sched *scheduler
 	vb    *voicebank.Voicebank
@@ -17,19 +18,45 @@ type Synth struct {
 	buf   []float32
 }
 
-func New(sr freq.Frequency, vb *voicebank.Voicebank, seq sequence.Sequence) *Synth {
+func New(sr freq.Frequency, vb *voicebank.Voicebank) *Synth {
 	s := &Synth{
-		sched: &scheduler{tpqn: seq.Metadata.Resolution, bpm: seq.Metadata.Tempo},
+		sched: &scheduler{},
 		vb:    vb,
 		sr:    int(sr.Hertz()),
 		buf:   make([]float32, 0, 8192),
 	}
-	s.Enqueue(seq.Notes...)
 	return s
 }
 
+// SetResolution sets the timing resolution in ticks per quarter note (TPQN).
+//
+// Higher values increase timing precision but may result in more scheduling
+// overhead.
+func (s *Synth) SetResolution(resolution int) {
+	s.sched.tpqn = resolution
+}
+
+// SetTempo sets the playback tempo in beats per minute (BPM).
+func (s *Synth) SetTempo(tempo float32) {
+	s.sched.bpm = tempo
+}
+
+// Enqueue adds notes to the synthesis queue.
+//
+// Notes are scheduled according to their tick position and will be rendered
+// in order during subsequent ReadSamples calls.
 func (s *Synth) Enqueue(notes ...sequence.Note) {
 	s.sched.enqueue(notes...)
+}
+
+// EnqueueSequence adds all notes from the given sequence to the synthesis
+// queue and updates the synthesizer's timing parameters.
+//
+// The sequence's resolution and tempo override the current scheduler settings.
+func (s *Synth) EnqueueSequence(seq sequence.Sequence) {
+	s.SetResolution(seq.Metadata.Resolution)
+	s.SetTempo(seq.Metadata.Tempo)
+	s.Enqueue(seq.Notes...)
 }
 
 func (s *Synth) ReadSamples(p []float32) (int, error) {
