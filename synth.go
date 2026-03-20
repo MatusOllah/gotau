@@ -7,7 +7,6 @@ import (
 
 	"github.com/SladkyCitron/gotau/sequence"
 	"github.com/SladkyCitron/gotau/voicebank"
-	"github.com/SladkyCitron/resona/freq"
 )
 
 const startBufSize = 4096 // Size of initial allocation for buffer
@@ -20,11 +19,11 @@ type Synth struct {
 	buf   []float32
 }
 
-func New(sr freq.Frequency, vb *voicebank.Voicebank) *Synth {
+func New(sr int, vb *voicebank.Voicebank) *Synth {
 	s := &Synth{
 		sched: &scheduler{},
 		vb:    vb,
-		sr:    int(sr.Hertz()),
+		sr:    sr,
 		buf:   make([]float32, 0, startBufSize),
 	}
 	return s
@@ -89,26 +88,7 @@ func (s *Synth) ReadSamples(p []float32) (int, error) {
 
 		notes := s.sched.pop(float64(len(p)-n) / float64(s.sr))
 		for _, note := range notes {
-			// emit silence before note
-			if note.Position > s.sched.tickPos {
-				s.debugLog("silence", note)
-				buf := make([]float32, int(s.sched.ticksToSeconds(note.Position-s.sched.tickPos)*float64(s.sr)))
-				s.buf = append(s.buf, buf...)
-				s.sched.tickPos = note.Position
-			}
-
-			// render note
-			s.debugLog("note", note)
-			buf := make([]float32, int(s.sched.ticksToSeconds(note.Duration)*float64(s.sr)))
-			freq := 440.0 * math.Pow(2, (float64(note.Note)-69)/12)
-			step := 2 * math.Pi * freq / float64(s.sr)
-			phase := 0.0
-			for i := range buf {
-				buf[i] = float32(math.Sin(phase))
-				phase += step
-			}
-			s.buf = append(s.buf, buf...)
-			s.sched.tickPos += note.Duration
+			s.renderNote(note)
 		}
 
 		copied := copy(p[n:], s.buf)
@@ -116,6 +96,29 @@ func (s *Synth) ReadSamples(p []float32) (int, error) {
 		n += copied
 	}
 	return n, nil
+}
+
+func (s *Synth) renderNote(note sequence.Note) {
+	// emit silence before note
+	if note.Position > s.sched.tickPos {
+		s.debugLog("silence", note)
+		buf := make([]float32, int(s.sched.ticksToSeconds(note.Position-s.sched.tickPos)*float64(s.sr)))
+		s.buf = append(s.buf, buf...)
+		s.sched.tickPos = note.Position
+	}
+
+	// render note
+	s.debugLog("note", note)
+	buf := make([]float32, int(s.sched.ticksToSeconds(note.Duration)*float64(s.sr)))
+	freq := 440.0 * math.Pow(2, (float64(note.Note)-69)/12)
+	step := 2 * math.Pi * freq / float64(s.sr)
+	phase := 0.0
+	for i := range buf {
+		buf[i] = float32(math.Sin(phase))
+		phase += step
+	}
+	s.buf = append(s.buf, buf...)
+	s.sched.tickPos += note.Duration
 }
 
 func (s *Synth) debugLog(msg string, note sequence.Note) {

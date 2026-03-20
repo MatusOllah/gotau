@@ -23,6 +23,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	println("loading voicebank")
+
 	zr, err := zip.OpenReader(os.Args[1], japanese.ShiftJIS)
 	if err != nil {
 		panic(err)
@@ -37,6 +39,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	println("loading UST")
 
 	inFile, err := os.Open(os.Args[2])
 	if err != nil {
@@ -53,8 +57,10 @@ func main() {
 		panic(err)
 	}
 
+	println("compiling UST")
 	seq := ustFile.Sequence()
 
+	println("loading synth")
 	synth := gotau.New(44100, vb)
 	synth.EnqueueSequence(seq)
 
@@ -68,6 +74,7 @@ func main() {
 		panic(err)
 	}
 
+	println("rendering")
 	if _, err := aio.Copy(enc, synth); err != nil {
 		panic(err)
 	}
