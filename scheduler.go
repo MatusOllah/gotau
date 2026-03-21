@@ -1,6 +1,7 @@
 package gotau
 
 import (
+	"iter"
 	"sort"
 
 	"github.com/SladkyCitron/gotau/internal/timeutil"
@@ -21,19 +22,21 @@ func (s *scheduler) enqueue(notes ...sequence.Note) {
 	})
 }
 
-// pop returns and dequeues all notes that are ready to be rendered up to seconds.
-func (s *scheduler) pop(seconds float64) []sequence.Note {
-	var ready []sequence.Note
-	ticks := s.secondsToTicks(seconds)
-	i := 0
-	for i < len(s.queue) && ticks > 0 {
-		note := s.queue[i]
-		ticks -= note.Duration
-		ready = append(ready, note)
-		i++
+// popSeq returns and dequeues all notes that are ready to be rendered up to seconds.
+func (s *scheduler) popSeq(seconds float64) iter.Seq[sequence.Note] {
+	return func(yield func(sequence.Note) bool) {
+		ticks := s.secondsToTicks(seconds)
+		i := 0
+		for i < len(s.queue) && ticks > 0 {
+			note := s.queue[i]
+			ticks -= note.Duration
+			if !yield(note) {
+				break
+			}
+			i++
+		}
+		s.queue = s.queue[i:]
 	}
-	s.queue = s.queue[i:]
-	return ready
 }
 
 func (s *scheduler) secondsToTicks(seconds float64) int {

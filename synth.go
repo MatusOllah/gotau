@@ -99,8 +99,7 @@ func (s *Synth) ReadSamples(p []float32) (int, error) {
 			return n, nil
 		}
 
-		notes := s.sched.pop(float64(len(p)-n) / float64(s.sr))
-		for _, note := range notes {
+		for note := range s.sched.popSeq(float64(len(p)-n) / float64(s.sr)) {
 			if err := s.renderNote(note); err != nil {
 				copied := copy(p[n:], s.buf)
 				s.buf = s.buf[copied:]
