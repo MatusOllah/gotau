@@ -3,6 +3,7 @@ package gotau
 import (
 	"sort"
 
+	"github.com/SladkyCitron/gotau/internal/timeutil"
 	"github.com/SladkyCitron/gotau/sequence"
 )
 
@@ -36,9 +37,9 @@ func (s *scheduler) pop(seconds float64) []sequence.Note {
 }
 
 func (s *scheduler) secondsToTicks(seconds float64) int {
-	return int(seconds * float64(s.tpqn) * float64(s.bpm) / 60)
+	return timeutil.SecondsToTicks(seconds, s.tpqn, float64(s.bpm))
 }
 
 func (s *scheduler) ticksToSeconds(ticks int) float64 {
-	return float64(ticks) / (float64(s.tpqn) * float64(s.bpm) / 60)
+	return timeutil.TicksToSeconds(ticks, s.tpqn, float64(s.bpm))
 }
