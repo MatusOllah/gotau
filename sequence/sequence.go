@@ -1,6 +1,8 @@
 package sequence
 
 import (
+	"time"
+
 	"github.com/SladkyCitron/gotau/umath"
 	"gitlab.com/gomidi/midi/v2"
 )
@@ -92,4 +94,19 @@ type CurvePoint struct {
 type Sequencer interface {
 	// Sequence returns the [Sequence].
 	Sequence() Sequence
+}
+
+// Len returns the sequence's length in MIDI ticks.
+func (s Sequence) Len() int {
+	len := 0
+	for _, note := range s.Notes {
+		len += note.Duration
+	}
+	return len
+}
+
+// Duration returns the sequence's length as a [time.Duration].
+func (s Sequence) Duration() time.Duration {
+	seconds := float64(s.Len()) / (float64(s.Metadata.Resolution) * float64(s.Metadata.Tempo) / 60)
+	return time.Duration(seconds * 1e9)
 }
