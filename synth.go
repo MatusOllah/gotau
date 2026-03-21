@@ -1,28 +1,36 @@
 package gotau
 
 import (
+	"fmt"
 	"io"
 	"log"
-	"math"
 
+	"github.com/SladkyCitron/gotau/phonemizer"
 	"github.com/SladkyCitron/gotau/sequence"
 	"github.com/SladkyCitron/gotau/voicebank"
+	"github.com/SladkyCitron/resona/codec"
+	_ "github.com/SladkyCitron/resona/codec/au"
+	_ "github.com/SladkyCitron/resona/codec/qoa"
+	_ "github.com/SladkyCitron/resona/codec/wav"
 )
 
 const startBufSize = 4096 // Size of initial allocation for buffer
 
 // Synth is the main voice synthsizer that renders notes into audio samples.
 type Synth struct {
-	sched *scheduler
-	vb    *voicebank.Voicebank
-	sr    int
-	buf   []float32
+	vb        *voicebank.Voicebank
+	ph        phonemizer.Phonemizer
+	sched     *scheduler
+	sr        int
+	buf       []float32
+	prevLyric string
 }
 
 func New(sr int, vb *voicebank.Voicebank) *Synth {
 	s := &Synth{
-		sched: &scheduler{},
 		vb:    vb,
+		ph:    &phonemizer.Default{},
+		sched: &scheduler{},
 		sr:    sr,
 		buf:   make([]float32, 0, startBufSize),
 	}
@@ -34,6 +42,11 @@ func New(sr int, vb *voicebank.Voicebank) *Synth {
 // The contents of the buffer are ignored.
 func (s *Synth) Buffer(buf []float32) {
 	s.buf = buf[0:cap(buf)]
+}
+
+// SetPhonemizer sets the phonemizer.
+func (s *Synth) SetPhonemizer(ph phonemizer.Phonemizer) {
+	s.ph = ph
 }
 
 // SetResolution sets the timing resolution in ticks per quarter note (TPQN).
@@ -88,7 +101,12 @@ func (s *Synth) ReadSamples(p []float32) (int, error) {
 
 		notes := s.sched.pop(float64(len(p)-n) / float64(s.sr))
 		for _, note := range notes {
-			s.renderNote(note)
+			if err := s.renderNote(note); err != nil {
+				copied := copy(p[n:], s.buf)
+				s.buf = s.buf[copied:]
+				n += copied
+				return n, fmt.Errorf("gotau Synth: failed to render note %q: %w", note.Lyric, err)
+			}
 		}
 
 		copied := copy(p[n:], s.buf)
@@ -98,7 +116,7 @@ func (s *Synth) ReadSamples(p []float32) (int, error) {
 	return n, nil
 }
 
-func (s *Synth) renderNote(note sequence.Note) {
+func (s *Synth) renderNote(note sequence.Note) error {
 	// emit silence before note
 	if note.Position > s.sched.tickPos {
 		s.debugLog("silence", note)
@@ -110,15 +128,52 @@ func (s *Synth) renderNote(note sequence.Note) {
 	// render note
 	s.debugLog("note", note)
 	buf := make([]float32, int(s.sched.ticksToSeconds(note.Duration)*float64(s.sr)))
-	freq := 440.0 * math.Pow(2, (float64(note.Note)-69)/12)
-	step := 2 * math.Pi * freq / float64(s.sr)
-	phase := 0.0
-	for i := range buf {
-		buf[i] = float32(math.Sin(phase))
-		phase += step
+
+	otoEntry, ok := s.getOtoEntry(note)
+	if !ok {
+		// oto entry not found; emit silence instead
+		s.buf = append(s.buf, buf...)
+		s.sched.tickPos += note.Duration
+		s.prevLyric = note.Lyric
+		return nil
 	}
+
+	f, err := s.vb.FS().Open(otoEntry.FilePath())
+	if err != nil {
+		return err
+	}
+
+	deco, _, err := codec.Decode(f)
+	if err != nil {
+		return err
+	}
+	if sr := int(deco.Format().SampleRate.Hertz()); sr != s.sr {
+		return fmt.Errorf("voicebank (%d Hz) and synth (%d Hz) sample rate do not match", sr, s.sr)
+	}
+
+	if _, err := deco.ReadSamples(buf); err != nil {
+		return err
+	}
+
 	s.buf = append(s.buf, buf...)
 	s.sched.tickPos += note.Duration
+	s.prevLyric = note.Lyric
+	return nil
+}
+
+func (s *Synth) getOtoEntry(note sequence.Note) (e voicebank.OtoEntry, ok bool) {
+	resolveCfg := phonemizer.ResolveConfig{
+		PrevLyric: s.prevLyric,
+		Lyric:     note.Lyric,
+		Note:      note.Note,
+	}
+	for alias := range s.ph.Resolve(resolveCfg) {
+		e, ok = s.vb.Oto.Get(alias)
+		if ok {
+			return e, true
+		}
+	}
+	return voicebank.OtoEntry{}, false
 }
 
 func (s *Synth) debugLog(msg string, note sequence.Note) {
