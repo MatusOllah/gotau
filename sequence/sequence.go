@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/SladkyCitron/gotau/internal/timeutil"
-	"github.com/SladkyCitron/gotau/umath"
 	"gitlab.com/gomidi/midi/v2"
 )
 
@@ -85,7 +84,11 @@ type Curve []CurvePoint
 
 // CurvePoint represents a single point on a curve.
 type CurvePoint struct {
-	umath.XY[float32]
+	// X is the position in MIDI ticks.
+	X int
+
+	// Y is the value.
+	Y float32
 
 	// Interp is the interpolation type to the next point. If it's the last point, it is ignored.
 	Interp CurveInterpolation

@@ -2,7 +2,6 @@ package ust
 
 import (
 	"github.com/SladkyCitron/gotau/sequence"
-	"github.com/SladkyCitron/gotau/umath"
 	"gopkg.in/ini.v1"
 )
 
@@ -45,7 +44,7 @@ func (f *File) Sequence() sequence.Sequence {
 			VoiceOverlap: note.VoiceOverlap,
 			StartPoint:   note.StartPoint,
 			Envelope:     envelopeToCurve(note.Envelope, msPerTick*float32(note.Length)),
-			PitchBend:    pitchBendToCurve(note.PitchBend, msPerTick),
+			PitchBend:    pitchBendToCurve(note.PitchBend),
 		})
 		position += note.Length
 	}
@@ -60,13 +59,11 @@ func envelopeToCurve(env *Envelope, noteDurMs float32) sequence.Curve {
 	}
 
 	add := func(t, v float32) {
-		// t = milliseconds
+		// t = ticks
 		// v = percentage
 		points = append(points, sequence.CurvePoint{
-			XY: umath.XY[float32]{
-				X: t,
-				Y: v / 100,
-			},
+			X:      int(t),
+			Y:      v / 100,
 			Interp: sequence.CurveInterpolationLinear,
 		})
 	}
@@ -104,7 +101,7 @@ func envelopeToCurve(env *Envelope, noteDurMs float32) sequence.Curve {
 	return points
 }
 
-func pitchBendToCurve(pb *PitchBend, msPerTick float32) sequence.Curve {
+func pitchBendToCurve(pb *PitchBend) sequence.Curve {
 	if pb == nil {
 		return sequence.Curve{}
 	}
@@ -128,7 +125,8 @@ func pitchBendToCurve(pb *PitchBend, msPerTick float32) sequence.Curve {
 	y := pb.Start.Y
 	for i := range pb.Widths {
 		points = append(points, sequence.CurvePoint{
-			XY:     umath.XY[float32]{X: x * msPerTick, Y: y},
+			X:      int(x),
+			Y:      y,
 			Interp: convertPBM(pb.Modes[i]),
 		})
 		x += pb.Widths[i]
