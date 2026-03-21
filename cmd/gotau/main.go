@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/SladkyCitron/enczip/zip"
 	"github.com/SladkyCitron/gotau"
@@ -23,6 +24,8 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Usage: %s voicebank.zip song.ust output.wav", os.Args[0])
 		os.Exit(1)
 	}
+
+	before := time.Now()
 
 	println("loading voicebank")
 
@@ -88,6 +91,8 @@ func main() {
 	if err := outFile.Close(); err != nil {
 		panic(err)
 	}
+
+	fmt.Printf("Done!\nTook %s\n", time.Since(before).String())
 
 	// not getting rid of this, I'm very proud of this one :)
 	/*
