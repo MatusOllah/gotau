@@ -58,10 +58,10 @@ func TestParsePitchBend(t *testing.T) {
 	assert.NotNil(t, pb)
 
 	assert.Equal(t, 5, pb.Type)
-	assert.Equal(t, float32(10.0), pb.Start.X)
-	assert.Equal(t, float32(2.0), pb.Start.Y)
-	assert.Equal(t, []float32{30, 40}, pb.Widths)
-	assert.Equal(t, []float32{0.5, 1.0}, pb.Ys)
+	assert.Equal(t, float64(10.0), pb.Start.X)
+	assert.Equal(t, float64(2.0), pb.Start.Y)
+	assert.Equal(t, []float64{30, 40}, pb.Widths)
+	assert.Equal(t, []float64{0.5, 1.0}, pb.Ys)
 	assert.Equal(t, []ust.PitchBendMode{ust.PitchBendModeLinear, ust.PitchBendModeSine}, pb.Modes)
 }
 
@@ -74,6 +74,6 @@ func TestParsePitchBend_EmptyFields(t *testing.T) {
 	pb, err := ust.ParsePitchBend("", "", "0", "10", "0", "")
 	assert.NoError(t, err)
 	assert.Equal(t, 5, pb.Type)
-	assert.Equal(t, float32(0.0), pb.Start.X)
-	assert.Equal(t, float32(0.0), pb.Start.Y)
+	assert.Equal(t, float64(0.0), pb.Start.X)
+	assert.Equal(t, float64(0.0), pb.Start.Y)
 }
