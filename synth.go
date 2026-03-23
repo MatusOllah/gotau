@@ -58,7 +58,7 @@ func (s *Synth) SetResolution(resolution int) {
 }
 
 // SetTempo sets the playback tempo in beats per minute (BPM).
-func (s *Synth) SetTempo(tempo float32) {
+func (s *Synth) SetTempo(tempo float64) {
 	s.sched.bpm = tempo
 }
 

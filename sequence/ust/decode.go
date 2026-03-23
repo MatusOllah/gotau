@@ -106,11 +106,11 @@ func (f *File) parseVersion(sec *ini.Section) error {
 func (f *File) parseSetting(sec *ini.Section) (err error) {
 	f.Settings = Settings{}
 
-	tempo, err := strconv.ParseFloat(sec.Key("Tempo").String(), 32) // Tempo
+	tempo, err := strconv.ParseFloat(sec.Key("Tempo").String(), 64) // Tempo
 	if err != nil {
 		return fmt.Errorf("failed to parse tempo: %w", err)
 	}
-	f.Settings.Tempo = float32(tempo)
+	f.Settings.Tempo = tempo
 
 	f.Settings.ProjectName = sec.Key("ProjectName").String() // ProjectName
 	f.Settings.Project = sec.Key("Project").String()         // Project (OpenUtau)
@@ -150,65 +150,61 @@ func (f *File) parseNote(sec *ini.Section) (err error) {
 	// Intensity
 	note.Intensity = 100
 	if key, err := sec.GetKey("Intensity"); err == nil && key.String() != "" {
-		intensity, err := strconv.ParseFloat(key.String(), 32)
+		intensity, err := strconv.ParseFloat(key.String(), 64)
 		if err != nil {
 			return fmt.Errorf("failed to parse intensity: %w", err)
 		}
-		note.Intensity = float32(intensity)
+		note.Intensity = intensity
 	}
 
 	// Velocity
 	note.Velocity = nil
 	if key, err := sec.GetKey("Velocity"); err == nil && key.String() != "" {
-		velocity, err := strconv.ParseFloat(key.String(), 32)
+		velocity, err := strconv.ParseFloat(key.String(), 64)
 		if err != nil {
 			return fmt.Errorf("failed to parse velocity: %w", err)
 		}
-		velocity32 := float32(velocity)
-		note.Velocity = &velocity32
+		note.Velocity = &velocity
 	}
 
 	// Modulation
 	note.Modulation = 0
 	if key, err := sec.GetKey("Modulation"); err == nil && key.String() != "" {
-		modulation, err := strconv.ParseFloat(key.String(), 32)
+		modulation, err := strconv.ParseFloat(key.String(), 64)
 		if err != nil {
 			return fmt.Errorf("failed to parse modulation: %w", err)
 		}
-		note.Modulation = float32(modulation)
+		note.Modulation = modulation
 	}
 
 	// PreUtterance
 	note.PreUtterance = nil
 	if key, err := sec.GetKey("PreUtterance"); err == nil && key.String() != "" {
-		preUtterance, err := strconv.ParseFloat(key.String(), 32)
+		preUtterance, err := strconv.ParseFloat(key.String(), 64)
 		if err != nil {
 			return fmt.Errorf("failed to parse pre-utterance: %w", err)
 		}
-		preUtterance32 := float32(preUtterance)
-		note.PreUtterance = &preUtterance32
+		note.PreUtterance = &preUtterance
 	}
 
 	// VoiceOverlap
 	note.VoiceOverlap = nil
 	if key, err := sec.GetKey("VoiceOverlap"); err == nil && key.String() != "" {
-		voiceOverlap, err := strconv.ParseFloat(key.String(), 32)
+		voiceOverlap, err := strconv.ParseFloat(key.String(), 64)
 		if err != nil {
 			return fmt.Errorf("failed to parse voice overlap: %w", err)
 		}
-		voiceOverlap32 := float32(voiceOverlap)
-		note.VoiceOverlap = &voiceOverlap32
+		note.VoiceOverlap = &voiceOverlap
 	}
 
 	// StartPoint
 	note.StartPoint = nil
 	if key, err := sec.GetKey("StartPoint"); err == nil && key.String() != "" {
-		startPoint, err := strconv.ParseFloat(key.String(), 32)
+		startPoint, err := strconv.ParseFloat(key.String(), 64)
 		if err != nil {
 			return fmt.Errorf("failed to parse start point: %w", err)
 		}
-		startPoint32 := float32(startPoint)
-		note.StartPoint = &startPoint32
+		note.StartPoint = &startPoint
 	}
 
 	// Envelope

@@ -70,9 +70,9 @@ func ParsePitchBendMode(s string) (PitchBendMode, error) {
 // PitchBend represents the pitch bend data.
 type PitchBend struct {
 	Type   int               // Type is the pitch bend type (0 = no bend, 5 = default).
-	Start  umath.XY[float32] // Start is the starting point in ticks (X-axis) and initial pitch offset (Y-axis in semitones).
-	Widths []float32         // Widths are the widths in ticks for each pitch segment.
-	Ys     []float32         // Ys are the pitch offsets in semitones for each segment.
+	Start  umath.XY[float64] // Start is the starting point in ticks (X-axis) and initial pitch offset (Y-axis in semitones).
+	Widths []float64         // Widths are the widths in ticks for each pitch segment.
+	Ys     []float64         // Ys are the pitch offsets in semitones for each segment.
 	Modes  []PitchBendMode   // Modes are the interpolation modes for each segment.
 }
 
@@ -103,13 +103,13 @@ func ParsePitchBend(typ, start, pbs, pbw, pby, pbm string) (pb *PitchBend, err e
 	slicestrconv.ClosingBracket = ""
 
 	// PBW
-	pb.Widths, err = slicestrconv.ParseFloat32Slice(pbw)
+	pb.Widths, err = slicestrconv.ParseFloat64Slice(pbw)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse pitch bend widths: %w", err)
 	}
 
 	// PBY
-	pb.Ys, err = slicestrconv.ParseFloat32Slice(pby)
+	pb.Ys, err = slicestrconv.ParseFloat64Slice(pby)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse pitch bend ys: %w", err)
 	}
@@ -131,17 +131,17 @@ func ParsePitchBend(typ, start, pbs, pbw, pby, pbm string) (pb *PitchBend, err e
 
 func (pb *PitchBend) parseStart(s string) error {
 	pbsParts := strings.Split(s, ";")
-	x, err := strconv.ParseFloat(pbsParts[0], 32)
+	x, err := strconv.ParseFloat(pbsParts[0], 64)
 	if err != nil {
 		return err
 	}
 	y := 0.0
 	if len(pbsParts) > 1 {
-		y, err = strconv.ParseFloat(pbsParts[1], 32)
+		y, err = strconv.ParseFloat(pbsParts[1], 64)
 		if err != nil {
 			return err
 		}
 	}
-	pb.Start = umath.XY[float32]{X: float32(x), Y: float32(y)}
+	pb.Start = umath.XY[float64]{X: x, Y: y}
 	return nil
 }

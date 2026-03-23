@@ -31,7 +31,7 @@ type Metadata struct {
 	Resolution int
 
 	// Tempo is the tempo of the sequence in beats per minute (BPM).
-	Tempo float32
+	Tempo float64
 }
 
 // time signature is always 4/4 (for now)
@@ -51,16 +51,16 @@ type Note struct {
 	Note midi.Note
 
 	// Intensity is the loudness or intensity of the note (0.0 to 1.0).
-	Intensity float32
+	Intensity float64
 
 	// PreUtterance is the duration (in milliseconds) before note to start playback (in OTO). If it's omitted, falls back to OTO defaults.
-	PreUtterance *float32
+	PreUtterance *float64
 
 	// VoiceOverlap is the amount of overlap into the previous note. If it's omitted, falls back to OTO defaults.
-	VoiceOverlap *float32
+	VoiceOverlap *float64
 
 	// StartPoint is the time where to begin sampling inside the audio file (in milliseconds). If it's omitted, falls back to OTO defaults.
-	StartPoint *float32
+	StartPoint *float64
 
 	// Envelope is the volume envelope curve. It should have at most 5 points.
 	Envelope Curve
@@ -88,7 +88,7 @@ type CurvePoint struct {
 	X int
 
 	// Y is the value.
-	Y float32
+	Y float64
 
 	// Interp is the interpolation type to the next point. If it's the last point, it is ignored.
 	Interp CurveInterpolation
@@ -111,5 +111,5 @@ func (s Sequence) Len() int {
 
 // Duration returns the sequence's length as a [time.Duration].
 func (s Sequence) Duration() time.Duration {
-	return timeutil.TicksToDuration(s.Len(), s.Metadata.Resolution, float64(s.Metadata.Tempo))
+	return timeutil.TicksToDuration(s.Len(), s.Metadata.Resolution, s.Metadata.Tempo)
 }

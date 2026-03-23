@@ -32,7 +32,7 @@ func (f *File) Sequence() sequence.Sequence {
 			continue
 		}
 
-		msPerTick := 60000 / (f.Settings.Tempo * float32(seq.Metadata.Resolution))
+		msPerTick := 60000 / (f.Settings.Tempo * float64(seq.Metadata.Resolution))
 
 		seq.Notes = append(seq.Notes, sequence.Note{
 			Position:     position,
@@ -43,7 +43,7 @@ func (f *File) Sequence() sequence.Sequence {
 			PreUtterance: note.PreUtterance,
 			VoiceOverlap: note.VoiceOverlap,
 			StartPoint:   note.StartPoint,
-			Envelope:     envelopeToCurve(note.Envelope, msPerTick*float32(note.Length)),
+			Envelope:     envelopeToCurve(note.Envelope, msPerTick*float64(note.Length)),
 			PitchBend:    pitchBendToCurve(note.PitchBend),
 		})
 		position += note.Length
@@ -51,14 +51,14 @@ func (f *File) Sequence() sequence.Sequence {
 	return seq
 }
 
-func envelopeToCurve(env *Envelope, noteDurMs float32) sequence.Curve {
+func envelopeToCurve(env *Envelope, noteDurMs float64) sequence.Curve {
 	points := make(sequence.Curve, 0, 5)
 
 	if env == nil {
 		return points
 	}
 
-	add := func(t, v float32) {
+	add := func(t, v float64) {
 		// t = ticks
 		// v = percentage
 		points = append(points, sequence.CurvePoint{
@@ -68,7 +68,7 @@ func envelopeToCurve(env *Envelope, noteDurMs float32) sequence.Curve {
 		})
 	}
 
-	resolveV := func(value EnvelopeValue) float32 {
+	resolveV := func(value EnvelopeValue) float64 {
 		if value.Auto {
 			return 0
 		} else {

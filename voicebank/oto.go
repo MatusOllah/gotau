@@ -25,19 +25,19 @@ type OtoEntry struct {
 	Alias string
 
 	// Offset is the offset time in milliseconds.
-	Offset float32
+	Offset float64
 
 	// Consonant is the consonant duration in milliseconds.
-	Consonant float32
+	Consonant float64
 
 	// Cutoff is the cutoff time in milliseconds.
-	Cutoff float32
+	Cutoff float64
 
 	// Preutterance is the preutterance time in milliseconds.
-	Preutterance float32
+	Preutterance float64
 
 	// Overlap is the overlap time in milliseconds.
-	Overlap float32
+	Overlap float64
 }
 
 // FilePath returns the file path to the audio file.
@@ -139,7 +139,7 @@ func DecodeOto(r io.Reader, opts ...OtoOption) (Oto, error) {
 		if values[1] == "" {
 			values[1] = "0"
 		}
-		offset, err := strconv.ParseFloat(values[1], 32)
+		offset, err := strconv.ParseFloat(values[1], 64)
 		if err != nil {
 			return oto, fmt.Errorf("failed to parse offset value for %s: %w", strconv.Quote(filename), err)
 		}
@@ -147,7 +147,7 @@ func DecodeOto(r io.Reader, opts ...OtoOption) (Oto, error) {
 		if values[2] == "" {
 			values[2] = "0"
 		}
-		consonant, err := strconv.ParseFloat(values[2], 32)
+		consonant, err := strconv.ParseFloat(values[2], 64)
 		if err != nil {
 			return oto, fmt.Errorf("failed to parse consonant value for %s: %w", strconv.Quote(filename), err)
 		}
@@ -155,7 +155,7 @@ func DecodeOto(r io.Reader, opts ...OtoOption) (Oto, error) {
 		if values[3] == "" {
 			values[3] = "0"
 		}
-		cutoff, err := strconv.ParseFloat(values[3], 32)
+		cutoff, err := strconv.ParseFloat(values[3], 64)
 		if err != nil {
 			return oto, fmt.Errorf("failed to parse cutoff value for %s: %w", strconv.Quote(filename), err)
 		}
@@ -163,7 +163,7 @@ func DecodeOto(r io.Reader, opts ...OtoOption) (Oto, error) {
 		if values[4] == "" {
 			values[4] = "0"
 		}
-		preutter, err := strconv.ParseFloat(values[4], 32)
+		preutter, err := strconv.ParseFloat(values[4], 64)
 		if err != nil {
 			return oto, fmt.Errorf("failed to parse preutterance value for %s: %w", strconv.Quote(filename), err)
 		}
@@ -171,7 +171,7 @@ func DecodeOto(r io.Reader, opts ...OtoOption) (Oto, error) {
 		if values[5] == "" {
 			values[5] = "0"
 		}
-		overlap, err := strconv.ParseFloat(values[5], 32)
+		overlap, err := strconv.ParseFloat(values[5], 64)
 		if err != nil {
 			return oto, fmt.Errorf("failed to parse overlap value for %s: %w", strconv.Quote(filename), err)
 		}
@@ -180,11 +180,11 @@ func DecodeOto(r io.Reader, opts ...OtoOption) (Oto, error) {
 			Filename:     filename,
 			Directory:    cfg.dir,
 			Alias:        alias,
-			Offset:       float32(offset),
-			Consonant:    float32(consonant),
-			Cutoff:       float32(cutoff),
-			Preutterance: float32(preutter),
-			Overlap:      float32(overlap),
+			Offset:       offset,
+			Consonant:    consonant,
+			Cutoff:       cutoff,
+			Preutterance: preutter,
+			Overlap:      overlap,
 		})
 	}
 	return oto, scan.Err()
@@ -219,7 +219,7 @@ func (o Oto) Encode(w io.Writer, opts ...OtoOption) error {
 	}
 	var buf bytes.Buffer
 	buf.Grow(256)                   // preallocate some space
-	floatTmp := make([]byte, 0, 32) // scratch buffer for floats
+	floatTmp := make([]byte, 0, 64) // scratch buffer for floats
 
 	for _, entry := range o {
 		// filename=alias,offset,consonant,cutoff,preutter,overlap
@@ -230,15 +230,15 @@ func (o Oto) Encode(w io.Writer, opts ...OtoOption) error {
 		buf.WriteByte('=')
 		buf.WriteString(entry.Alias)
 		buf.WriteByte(',')
-		buf.Write(strconv.AppendFloat(floatTmp[:0], float64(entry.Offset), 'f', cfg.floatPrecision, 32))
+		buf.Write(strconv.AppendFloat(floatTmp[:0], entry.Offset, 'f', cfg.floatPrecision, 64))
 		buf.WriteByte(',')
-		buf.Write(strconv.AppendFloat(floatTmp[:0], float64(entry.Consonant), 'f', cfg.floatPrecision, 32))
+		buf.Write(strconv.AppendFloat(floatTmp[:0], entry.Consonant, 'f', cfg.floatPrecision, 64))
 		buf.WriteByte(',')
-		buf.Write(strconv.AppendFloat(floatTmp[:0], float64(entry.Cutoff), 'f', cfg.floatPrecision, 32))
+		buf.Write(strconv.AppendFloat(floatTmp[:0], entry.Cutoff, 'f', cfg.floatPrecision, 64))
 		buf.WriteByte(',')
-		buf.Write(strconv.AppendFloat(floatTmp[:0], float64(entry.Preutterance), 'f', cfg.floatPrecision, 32))
+		buf.Write(strconv.AppendFloat(floatTmp[:0], entry.Preutterance, 'f', cfg.floatPrecision, 64))
 		buf.WriteByte(',')
-		buf.Write(strconv.AppendFloat(floatTmp[:0], float64(entry.Overlap), 'f', cfg.floatPrecision, 32))
+		buf.Write(strconv.AppendFloat(floatTmp[:0], entry.Overlap, 'f', cfg.floatPrecision, 64))
 		buf.WriteByte(10) // newline
 
 		if _, err := buf.WriteTo(newWriter); err != nil {

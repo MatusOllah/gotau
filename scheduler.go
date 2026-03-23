@@ -11,7 +11,7 @@ import (
 type scheduler struct {
 	queue   []sequence.Note
 	tpqn    int
-	bpm     float32
+	bpm     float64
 	tickPos int
 }
 
@@ -40,9 +40,9 @@ func (s *scheduler) popSeq(seconds float64) iter.Seq[sequence.Note] {
 }
 
 func (s *scheduler) secondsToTicks(seconds float64) int {
-	return timeutil.SecondsToTicks(seconds, s.tpqn, float64(s.bpm))
+	return timeutil.SecondsToTicks(seconds, s.tpqn, s.bpm)
 }
 
 func (s *scheduler) ticksToSeconds(ticks int) float64 {
-	return timeutil.TicksToSeconds(ticks, s.tpqn, float64(s.bpm))
+	return timeutil.TicksToSeconds(ticks, s.tpqn, s.bpm)
 }

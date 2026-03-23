@@ -23,12 +23,12 @@ type Envelope struct {
 // EnvelopeValue represents a single value in an envelope, which can be either
 // a fixed value or an automatic value (represented in UST as %).
 type EnvelopeValue struct {
-	Value float32
+	Value float64
 	Auto  bool
 }
 
 // Env is shorthand for &Envelope{...}.
-func Env(p1, p2, p3, v1, v2, v3, v4, p4, p5, v5 float32) *Envelope {
+func Env(p1, p2, p3, v1, v2, v3, v4, p4, p5, v5 float64) *Envelope {
 	return &Envelope{
 		P1: EnvelopeValue{Value: p1},
 		P2: EnvelopeValue{Value: p2},
@@ -47,11 +47,11 @@ func parseEnvelopeValue(s string) (EnvelopeValue, error) {
 	if s == "%" || s == "" {
 		return EnvelopeValue{Auto: true}, nil
 	}
-	v, err := strconv.ParseFloat(s, 32)
+	v, err := strconv.ParseFloat(s, 64)
 	if err != nil {
 		return EnvelopeValue{}, err
 	}
-	return EnvelopeValue{Value: float32(v)}, nil
+	return EnvelopeValue{Value: v}, nil
 }
 
 // ParseEnvelope parses a string representing an [Envelope] in an UST note.
