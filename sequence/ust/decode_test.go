@@ -41,7 +41,7 @@ func TestDecode(t *testing.T) {
 						Intensity:    100,
 						Velocity:     float64Ptr(100),
 						Modulation:   0,
-						PreUtterance: float64Ptr(42),
+						Preutterance: float64Ptr(42),
 						VoiceOverlap: float64Ptr(42),
 						StartPoint:   float64Ptr(42),
 						Envelope: &ust.Envelope{

@@ -178,13 +178,13 @@ func (f *File) parseNote(sec *ini.Section) (err error) {
 	}
 
 	// PreUtterance
-	note.PreUtterance = nil
+	note.Preutterance = nil
 	if key, err := sec.GetKey("PreUtterance"); err == nil && key.String() != "" {
 		preUtterance, err := strconv.ParseFloat(key.String(), 64)
 		if err != nil {
 			return fmt.Errorf("failed to parse pre-utterance: %w", err)
 		}
-		note.PreUtterance = &preUtterance
+		note.Preutterance = &preUtterance
 	}
 
 	// VoiceOverlap

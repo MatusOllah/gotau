@@ -40,7 +40,7 @@ func (f *File) Sequence() sequence.Sequence {
 			Lyric:        note.Lyric,
 			Note:         note.NoteNum,
 			Intensity:    note.Intensity / 100,
-			PreUtterance: note.PreUtterance,
+			Preutterance: note.Preutterance,
 			VoiceOverlap: note.VoiceOverlap,
 			StartPoint:   note.StartPoint,
 			Envelope:     envelopeToCurve(note.Envelope, msPerTick*float64(note.Length)),

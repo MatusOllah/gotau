@@ -1,8 +1,9 @@
 package gotau
 
 import (
+	"cmp"
 	"iter"
-	"sort"
+	"slices"
 
 	"github.com/SladkyCitron/gotau/internal/timeutil"
 	"github.com/SladkyCitron/gotau/sequence"
@@ -17,26 +18,38 @@ type scheduler struct {
 
 func (s *scheduler) enqueue(notes ...sequence.Note) {
 	s.queue = append(s.queue, notes...)
-	sort.Slice(s.queue, func(i, j int) bool {
-		return s.queue[i].Position < s.queue[j].Position
-	})
+	s.ensureQueueSorted()
+}
+
+var sortFn = func(a, b sequence.Note) int { return cmp.Compare(a.Position, b.Position) }
+
+func (s *scheduler) ensureQueueSorted() {
+	if slices.IsSortedFunc(s.queue, sortFn) {
+		return
+	}
+	slices.SortFunc(s.queue, sortFn)
 }
 
 // popSeq returns and dequeues all notes that are ready to be rendered up to seconds.
 func (s *scheduler) popSeq(seconds float64) iter.Seq[sequence.Note] {
 	return func(yield func(sequence.Note) bool) {
 		ticks := s.secondsToTicks(seconds)
-		i := 0
-		for i < len(s.queue) && ticks > 0 {
-			note := s.queue[i]
+		for len(s.queue) > 0 && ticks > 0 {
+			note := s.queue[0]
 			ticks -= note.Duration
 			if !yield(note) {
-				break
+				return
 			}
-			i++
+			s.queue = s.queue[1:]
 		}
-		s.queue = s.queue[i:]
 	}
+}
+
+func (s *scheduler) peek() (sequence.Note, bool) {
+	if len(s.queue) == 0 {
+		return sequence.Note{}, false
+	}
+	return s.queue[0], true
 }
 
 func (s *scheduler) secondsToTicks(seconds float64) int {

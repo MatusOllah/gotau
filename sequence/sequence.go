@@ -53,8 +53,8 @@ type Note struct {
 	// Intensity is the loudness or intensity of the note (0.0 to 1.0).
 	Intensity float64
 
-	// PreUtterance is the duration (in milliseconds) before note to start playback (in OTO). If it's omitted, falls back to OTO defaults.
-	PreUtterance *float64
+	// Preutterance is the duration (in milliseconds) before note to start playback (in OTO). If it's omitted, falls back to OTO defaults.
+	Preutterance *float64
 
 	// VoiceOverlap is the amount of overlap into the previous note. If it's omitted, falls back to OTO defaults.
 	VoiceOverlap *float64

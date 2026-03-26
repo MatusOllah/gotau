@@ -24,6 +24,7 @@ type Synth struct {
 	sr        int
 	buf       []float32
 	prevLyric string
+	nextLyric string
 }
 
 func New(sr int, vb *voicebank.Voicebank) *Synth {
@@ -99,7 +100,8 @@ func (s *Synth) ReadSamples(p []float32) (int, error) {
 			return n, nil
 		}
 
-		for note := range s.sched.popSeq(float64(len(p)-n) / float64(s.sr)) {
+		seconds := float64(len(p)-n) / float64(s.sr)
+		for note := range s.sched.popSeq(seconds) {
 			if err := s.renderNote(note); err != nil {
 				copied := copy(p[n:], s.buf)
 				s.buf = s.buf[copied:]
@@ -116,21 +118,46 @@ func (s *Synth) ReadSamples(p []float32) (int, error) {
 }
 
 func (s *Synth) renderNote(note sequence.Note) error {
-	// emit silence before note
-	if note.Position > s.sched.tickPos {
+	// get next lyric
+	if next, ok := s.sched.peek(); ok {
+		s.nextLyric = next.Lyric
+	} else {
+		s.nextLyric = ""
+	}
+
+	// get oto
+	otoEntry, ok := s.getOtoEntry(note)
+
+	// get preutterance of current and next note
+	preutter := s.getPreutter(otoEntry, note)
+	preutterSec := preutter / 1000
+	/*
+		var nextPreutter float64
+		if next, ok := s.sched.peek(); ok {
+			if next.Preutterance != nil {
+				nextPreutter = *next.Preutterance
+			}
+			if nextOtoEntry, ok := s.getOtoEntry(next); ok {
+				nextPreutter = s.getPreutter(nextOtoEntry, next)
+			}
+		}
+		nextPreutterSec := nextPreutter / 1000
+	*/
+
+	// emit possible silence before note
+	if startTick := note.Position - s.sched.secondsToTicks(preutterSec); startTick > s.sched.tickPos {
 		s.debugLog("silence", note)
-		buf := make([]float32, int(s.sched.ticksToSeconds(note.Position-s.sched.tickPos)*float64(s.sr)))
+		buf := make([]float32, int((s.sched.ticksToSeconds(note.Position-s.sched.tickPos)-preutterSec)*float64(s.sr)))
 		s.buf = append(s.buf, buf...)
-		s.sched.tickPos = note.Position
+		s.sched.tickPos = startTick
 	}
 
 	// render note
 	s.debugLog("note", note)
 	buf := make([]float32, int(s.sched.ticksToSeconds(note.Duration)*float64(s.sr)))
 
-	otoEntry, ok := s.getOtoEntry(note)
+	// oto entry not found; emit silence instead
 	if !ok {
-		// oto entry not found; emit silence instead
 		s.buf = append(s.buf, buf...)
 		s.sched.tickPos += note.Duration
 		s.prevLyric = note.Lyric
@@ -173,6 +200,13 @@ func (s *Synth) getOtoEntry(note sequence.Note) (e voicebank.OtoEntry, ok bool) 
 		}
 	}
 	return voicebank.OtoEntry{}, false
+}
+
+func (s *Synth) getPreutter(otoEntry voicebank.OtoEntry, note sequence.Note) float64 {
+	if note.Preutterance != nil {
+		return *note.Preutterance
+	}
+	return otoEntry.Preutterance
 }
 
 func (s *Synth) debugLog(msg string, note sequence.Note) {

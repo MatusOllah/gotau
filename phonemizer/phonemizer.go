@@ -23,11 +23,14 @@ type Phonemizer interface {
 
 // ResolveConfig represents the configuration for passing into [Phonemizer.Resolve].
 type ResolveConfig struct {
-	// Lyric is the main lyric.
-	Lyric string
-
 	// PrevLyric is the previous lyric.
 	PrevLyric string
+
+	// Lyric is the current lyric.
+	Lyric string
+
+	// NextLyric is the next lyric.
+	NextLyric string
 
 	// Note is the MIDI note. It's used for prefix.map lookup.
 	Note midi.Note
