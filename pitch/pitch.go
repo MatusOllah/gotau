@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"math"
 	"strconv"
-	"sync"
 
 	"github.com/SladkyCitron/gotau/internal/timeutil"
 	"github.com/SladkyCitron/gotau/sequence"
@@ -12,12 +11,6 @@ import (
 )
 
 type int12 int16
-
-var runTmpPool = sync.Pool{
-	New: func() any {
-		return make([]byte, 0, 8)
-	},
-}
 
 // EncodeResamplerPitchBend encodes a pitch bend curve into the UTAU resampler pitch bend string format.
 func EncodeResamplerPitchBend(curve sequence.Curve, note midi.Note, durationSec float64, tempo float64, tpqn int) []byte {
@@ -27,7 +20,7 @@ func EncodeResamplerPitchBend(curve sequence.Curve, note midi.Note, durationSec 
 
 	var buf bytes.Buffer
 	buf.Grow(int(math.Round(durationMs/5)) * 2) // allocate some space
-	runTmp := runTmpPool.Get().([]byte)         // scratch buffer for run length
+	runTmp := make([]byte, 0, 8)                // scratch buffer for run length
 
 	for t := float64(0); t <= durationMs; t += 5 {
 		pitch := curve.At(timeutil.SecondsToTicks(t/1000, tpqn, tempo))
@@ -55,9 +48,6 @@ func EncodeResamplerPitchBend(curve sequence.Curve, note midi.Note, durationSec 
 		buf.Write(strconv.AppendInt(runTmp[:0], int64(run), 10))
 		buf.WriteByte('#')
 	}
-
-	runTmp = runTmp[:0]
-	runTmpPool.Put(runTmp)
 
 	return buf.Bytes()
 }
