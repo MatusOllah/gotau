@@ -5,7 +5,9 @@ import (
 	"io"
 	"log"
 
+	"github.com/SladkyCitron/gotau/concat"
 	"github.com/SladkyCitron/gotau/phonemizer"
+	"github.com/SladkyCitron/gotau/resample"
 	"github.com/SladkyCitron/gotau/sequence"
 	"github.com/SladkyCitron/gotau/voicebank"
 	"github.com/SladkyCitron/resona/codec"
@@ -20,6 +22,8 @@ const startBufSize = 4096 // Size of initial allocation for buffer
 type Synth struct {
 	vb        *voicebank.Voicebank
 	ph        phonemizer.Phonemizer
+	res       resample.Resampler
+	cat       concat.Concatenator
 	sched     *scheduler
 	sr        int
 	buf       []float32
@@ -27,10 +31,12 @@ type Synth struct {
 	nextLyric string
 }
 
-func New(sr int, vb *voicebank.Voicebank) *Synth {
+func New(sr int, vb *voicebank.Voicebank, res resample.Resampler, cat concat.Concatenator) *Synth {
 	s := &Synth{
 		vb:    vb,
 		ph:    &phonemizer.Default{},
+		res:   res,
+		cat:   cat,
 		sched: &scheduler{},
 		sr:    sr,
 		buf:   make([]float32, 0, startBufSize),
@@ -126,23 +132,21 @@ func (s *Synth) renderNote(note sequence.Note) error {
 	}
 
 	// get oto
-	otoEntry, ok := s.getOtoEntry(note)
+	otoEntry, otoOk := s.getOtoEntry(note)
 
 	// get preutterance of current and next note
 	preutter := s.getPreutter(otoEntry, note)
 	preutterSec := preutter / 1000
-	/*
-		var nextPreutter float64
-		if next, ok := s.sched.peek(); ok {
-			if next.Preutterance != nil {
-				nextPreutter = *next.Preutterance
-			}
-			if nextOtoEntry, ok := s.getOtoEntry(next); ok {
-				nextPreutter = s.getPreutter(nextOtoEntry, next)
-			}
+	var nextPreutter float64
+	if next, ok := s.sched.peek(); ok {
+		if next.Preutterance != nil {
+			nextPreutter = *next.Preutterance
 		}
-		nextPreutterSec := nextPreutter / 1000
-	*/
+		if nextOtoEntry, ok := s.getOtoEntry(next); ok {
+			nextPreutter = s.getPreutter(nextOtoEntry, next)
+		}
+	}
+	nextPreutterSec := nextPreutter / 1000
 
 	// emit possible silence before note
 	if startTick := note.Position - s.sched.secondsToTicks(preutterSec); startTick > s.sched.tickPos {
@@ -152,17 +156,25 @@ func (s *Synth) renderNote(note sequence.Note) error {
 		s.sched.tickPos = startTick
 	}
 
-	// render note
 	s.debugLog("note", note)
-	buf := make([]float32, int(s.sched.ticksToSeconds(note.Duration)*float64(s.sr)))
 
 	// oto entry not found; emit silence instead
-	if !ok {
+	if !otoOk {
+		buf := make([]float32, int((s.sched.ticksToSeconds(note.Duration)-nextPreutterSec)*float64(s.sr)))
 		s.buf = append(s.buf, buf...)
 		s.sched.tickPos += note.Duration
 		s.prevLyric = note.Lyric
 		return nil
 	}
+
+	// adjust actual note duration and timing
+	var enroachment float64
+	if _, ok := s.sched.peek(); ok && s.sched.ticksToSeconds(note.Duration) <= nextPreutterSec {
+		enroachment = nextPreutterSec - s.sched.ticksToSeconds(note.Duration)
+	}
+	newLength := s.sched.ticksToSeconds(note.Duration) + preutterSec - enroachment
+
+	buf := make([]float32, int(newLength*float64(s.sr)))
 
 	f, err := s.vb.FS().Open(otoEntry.FilePath())
 	if err != nil {
@@ -177,9 +189,13 @@ func (s *Synth) renderNote(note sequence.Note) error {
 		return fmt.Errorf("voicebank (%d Hz) and synth (%d Hz) sample rate do not match", sr, s.sr)
 	}
 
-	if _, err := deco.ReadSamples(buf); err != nil {
-		return err
-	}
+	/*
+		resampleCfg := resample.ResampleConfig{
+			Note:     note,
+			OtoEntry: otoEntry,
+		}
+		s.res.Resample(deco, resampleCfg)
+	*/
 
 	s.buf = append(s.buf, buf...)
 	s.sched.tickPos += note.Duration

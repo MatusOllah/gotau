@@ -65,7 +65,7 @@ func main() {
 	seq := ustFile.Sequence()
 
 	println("loading synth")
-	synth := gotau.New(44100, vb)
+	synth := gotau.New(44100, vb, nil, nil)
 	synth.SetPhonemizer(&phonemizer.JapaneseVCV{PrefixMap: vb.PrefixMap})
 	synth.EnqueueSequence(seq)
 
