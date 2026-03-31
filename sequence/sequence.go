@@ -65,7 +65,7 @@ type Note struct {
 	// Envelope is the volume envelope curve. It should have at most 5 points.
 	Envelope Curve
 
-	// PitchBend is the pitch bend curve. The values are in semitones.
+	// PitchBend is the pitch bend curve. It is a curve that maps time (in MIDI ticks) to pitch (in semitones).
 	PitchBend Curve
 }
 
