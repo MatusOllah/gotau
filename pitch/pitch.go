@@ -1,9 +1,9 @@
 package pitch
 
 import (
-	"bytes"
 	"math"
 	"strconv"
+	"strings"
 
 	"github.com/SladkyCitron/gotau/internal/timeutil"
 	"github.com/SladkyCitron/gotau/sequence"
@@ -12,13 +12,13 @@ import (
 
 type int12 int16
 
-// EncodeResamplerPitchBend encodes a pitch bend curve into the UTAU resampler pitch bend string format.
-func EncodeResamplerPitchBend(curve sequence.Curve, note midi.Note, durationSec float64, tempo float64, tpqn int) []byte {
+// EncodeResamplerPitchBendString encodes a pitch bend curve into the UTAU resampler pitch bend string format.
+func EncodeResamplerPitchBendString(curve sequence.Curve, note midi.Note, durationSec float64, tempo float64, tpqn int) string {
 	durationMs := durationSec * 1000
 	last := int12(math.MinInt16)
 	run := 0 // run length
 
-	var buf bytes.Buffer
+	var buf strings.Builder
 	buf.Grow(int(math.Round(durationMs/5)) * 2) // allocate some space
 	runTmp := make([]byte, 0, 8)                // scratch buffer for run length
 
@@ -49,12 +49,12 @@ func EncodeResamplerPitchBend(curve sequence.Curve, note midi.Note, durationSec 
 		buf.WriteByte('#')
 	}
 
-	return buf.Bytes()
+	return buf.String()
 }
 
 const b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 
-func writeInt12(buf *bytes.Buffer, v int12) {
+func writeInt12(buf *strings.Builder, v int12) {
 	if v < -2048 {
 		v = -2048
 	}
