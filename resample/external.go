@@ -80,23 +80,23 @@ func (r *ExternalResampler) Resample(in aio.SampleReader, cfg ResampleConfig) (a
 func (r *ExternalResampler) createTempWav(in aio.SampleReader, cfg ResampleConfig) (string, error) {
 	// create filename
 	h := xxh3.New()
-	h.WriteString(r.cmd.Path)
-	h.Write([]byte{byte(cfg.Pitch)})
-	binary.Write(h, binary.LittleEndian, cfg.Velocity)
-	h.WriteString(cfg.Flags)
-	binary.Write(h, binary.LittleEndian, cfg.Offset)
-	binary.Write(h, binary.LittleEndian, cfg.Length)
-	binary.Write(h, binary.LittleEndian, cfg.Consonant)
-	binary.Write(h, binary.LittleEndian, cfg.Cutoff)
-	binary.Write(h, binary.LittleEndian, cfg.Volume)
-	binary.Write(h, binary.LittleEndian, cfg.Modulation)
-	binary.Write(h, binary.LittleEndian, cfg.Tempo)
-	binary.Write(h, binary.LittleEndian, uint64(cfg.Resolution))
-	binary.Write(h, binary.LittleEndian, uint64(len(cfg.PitchBend)))
+	_, _ = h.WriteString(r.cmd.Path)
+	_, _ = h.Write([]byte{byte(cfg.Pitch)})
+	_ = binary.Write(h, binary.LittleEndian, cfg.Velocity)
+	_, _ = h.WriteString(cfg.Flags)
+	_ = binary.Write(h, binary.LittleEndian, cfg.Offset)
+	_ = binary.Write(h, binary.LittleEndian, cfg.Length)
+	_ = binary.Write(h, binary.LittleEndian, cfg.Consonant)
+	_ = binary.Write(h, binary.LittleEndian, cfg.Cutoff)
+	_ = binary.Write(h, binary.LittleEndian, cfg.Volume)
+	_ = binary.Write(h, binary.LittleEndian, cfg.Modulation)
+	_ = binary.Write(h, binary.LittleEndian, cfg.Tempo)
+	_ = binary.Write(h, binary.LittleEndian, uint64(cfg.Resolution))
+	_ = binary.Write(h, binary.LittleEndian, uint64(len(cfg.PitchBend)))
 	for _, pt := range cfg.PitchBend {
-		binary.Write(h, binary.LittleEndian, uint64(pt.X))
-		binary.Write(h, binary.LittleEndian, pt.Y)
-		h.Write([]byte{byte(pt.Interp)})
+		_ = binary.Write(h, binary.LittleEndian, uint64(pt.X))
+		_ = binary.Write(h, binary.LittleEndian, pt.Y)
+		_, _ = h.Write([]byte{byte(pt.Interp)})
 	}
 	path := filepath.Join(os.TempDir(), fmt.Sprintf("gotau-externalresampler-%016x.wav", h.Sum64()))
 
@@ -128,7 +128,9 @@ func (r *ExternalResampler) createTempWav(in aio.SampleReader, cfg ResampleConfi
 		return "", err
 	}
 
-	f.Sync()
+	if err := f.Sync(); err != nil {
+		return "", err
+	}
 
 	return path, nil
 }
