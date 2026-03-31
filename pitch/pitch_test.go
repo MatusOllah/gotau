@@ -16,7 +16,7 @@ func TestEncodeResamplerPitchBendString(t *testing.T) {
 
 	got := pitch.EncodeResamplerPitchBendString(curve, 0, 1, 120, 480)
 
-	assert.Equal(t, got, []byte("AA#200#"))
+	assert.Equal(t, got, "AA#200#")
 }
 
 func BenchmarkEncodeResamplerPitchBendString(b *testing.B) {
