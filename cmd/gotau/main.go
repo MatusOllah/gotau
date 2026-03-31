@@ -14,6 +14,7 @@ import (
 	"github.com/SladkyCitron/resona/freq"
 
 	"github.com/SladkyCitron/gotau/phonemizer"
+	"github.com/SladkyCitron/gotau/resample"
 	"github.com/SladkyCitron/gotau/sequence/ust"
 	"github.com/SladkyCitron/gotau/voicebank"
 	"golang.org/x/text/encoding/japanese"
@@ -65,7 +66,7 @@ func main() {
 	seq := ustFile.Sequence()
 
 	println("loading synth")
-	synth := gotau.New(44100, vb, nil, nil)
+	synth := gotau.New(44100, vb, resample.NewExternal("straycat-rs.exe", afmt.SampleFormat{16, afmt.SampleEncodingInt, binary.LittleEndian}), nil)
 	synth.SetPhonemizer(&phonemizer.JapaneseVCV{PrefixMap: vb.PrefixMap})
 	synth.EnqueueSequence(seq)
 
