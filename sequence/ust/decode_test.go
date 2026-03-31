@@ -63,6 +63,7 @@ func TestDecode(t *testing.T) {
 							Ys:     []float64{0, 42},
 							Modes:  []ust.PitchBendMode{ust.PitchBendModeLinear, ust.PitchBendModeSine},
 						},
+						Flags: "g0",
 					},
 				},
 			},

@@ -21,6 +21,7 @@ PreUtterance=42
 VoiceOverlap=42
 StartPoint=42
 Envelope=5,35,0,100,100,0,0,%,0
+Flags=g0
 PBS=-40;0
 PBW=65,69
 PBY=0,42
