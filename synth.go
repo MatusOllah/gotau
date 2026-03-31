@@ -18,7 +18,7 @@ import (
 
 const startBufSize = 4096 // Size of initial allocation for buffer
 
-// Synth is the main voice synthsizer that renders notes into audio samples.
+// Synth is the main singing voice synthsizer that renders notes into audio samples.
 type Synth struct {
 	vb        *voicebank.Voicebank
 	ph        phonemizer.Phonemizer
@@ -31,6 +31,7 @@ type Synth struct {
 	nextLyric string
 }
 
+// New creates a new [Synth] with the given sample rate, voicebank, resampler, and concatenator.
 func New(sr int, vb *voicebank.Voicebank, res resample.Resampler, cat concat.Concatenator) *Synth {
 	s := &Synth{
 		vb:    vb,
