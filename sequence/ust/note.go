@@ -17,9 +17,8 @@ type Note struct {
 	StartPoint   *float64   // StartPoint is the time where to begin sampling inside the audio file (in milliseconds). If it's omitted, falls back to OTO defaults.
 	Envelope     *Envelope  // Envelope is the volume envelope.
 	PitchBend    *PitchBend // PitchBend is the pitch bend data.
+	Flags        string     // Flags is a string of flags for passing to the resampler. These can be resampler-specific.
 }
-
-//TODO: flags and vibrato???
 
 // IsLyricRest checks whether the lyrics is a rest / pause (e.g. "-", "R").
 func IsLyricRest(s string) bool {

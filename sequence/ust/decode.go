@@ -234,6 +234,9 @@ func (f *File) parseNote(sec *ini.Section) (err error) {
 		note.PitchBend = _pb
 	}
 
+	// Flags
+	note.Flags = sec.Key("Flags").String()
+
 	f.Notes = append(f.Notes, note)
 
 	return nil
