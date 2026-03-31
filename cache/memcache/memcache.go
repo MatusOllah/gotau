@@ -32,7 +32,13 @@ func (c *Cache) hash(key cache.KeyFunc) (uint64, error) {
 	return h.Sum64(), nil
 }
 
-func (c *Cache) Open(_ context.Context, key cache.KeyFunc) (io.ReadCloser, error) {
+func (c *Cache) Open(ctx context.Context, key cache.KeyFunc) (io.ReadCloser, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
+
 	hash, err := c.hash(key)
 	if err != nil {
 		return nil, fmt.Errorf("memcache: failed to hash key: %w", err)
@@ -40,15 +46,23 @@ func (c *Cache) Open(_ context.Context, key cache.KeyFunc) (io.ReadCloser, error
 
 	c.mu.RLock()
 	blob, ok := c.blobs[hash]
+	newBlob := make([]byte, len(blob))
+	copy(newBlob, blob)
 	c.mu.RUnlock()
 	if !ok {
 		return nil, cache.ErrNotFound
 	}
 
-	return io.NopCloser(bytes.NewReader(blob)), nil
+	return io.NopCloser(bytes.NewReader(newBlob)), nil
 }
 
-func (c *Cache) Create(_ context.Context, key cache.KeyFunc) (cache.BlobWriter, error) {
+func (c *Cache) Create(ctx context.Context, key cache.KeyFunc) (cache.BlobWriter, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
+
 	hash, err := c.hash(key)
 	if err != nil {
 		return nil, fmt.Errorf("memcache: failed to hash key: %w", err)
