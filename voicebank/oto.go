@@ -15,13 +15,13 @@ import (
 
 // OtoEntry represents a single entry in an oto.ini file.
 type OtoEntry struct {
-	// Filename is the name of the audio file associated with this Oto entry.
+	// Filename is the name of the audio file associated with this oto entry.
 	Filename string
 
 	// Directory is the path to the directory where the oto.ini file and audio files are located.
 	Directory string
 
-	// Alias is the phoneme or alias associated with this Oto entry.
+	// Alias is the phoneme or alias associated with this oto entry.
 	Alias string
 
 	// Offset is the offset time in milliseconds.
