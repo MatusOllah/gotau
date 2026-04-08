@@ -56,7 +56,7 @@ func (r *ExternalResampler) Resample(in aio.SampleReader, cfg ResampleConfig) (a
 		strconv.FormatFloat(cfg.Length, 'f', -1, 64),
 		strconv.FormatFloat(cfg.Consonant, 'f', -1, 64),
 		strconv.FormatFloat(cfg.Cutoff, 'f', -1, 64),
-		strconv.FormatFloat(cfg.Volume, 'f', -1, 64),
+		strconv.FormatFloat(cfg.Intensity*100, 'f', -1, 64),
 		strconv.FormatFloat(cfg.Modulation, 'f', -1, 64),
 		strconv.FormatFloat(cfg.Tempo, 'f', -1, 64),
 		pitch.EncodeResamplerPitchBendString(cfg.PitchBend, cfg.Pitch, cfg.Length, cfg.Tempo, cfg.Resolution),
@@ -88,7 +88,7 @@ func (r *ExternalResampler) createTempWav(in aio.SampleReader, cfg ResampleConfi
 	_ = binary.Write(h, binary.LittleEndian, cfg.Length)
 	_ = binary.Write(h, binary.LittleEndian, cfg.Consonant)
 	_ = binary.Write(h, binary.LittleEndian, cfg.Cutoff)
-	_ = binary.Write(h, binary.LittleEndian, cfg.Volume)
+	_ = binary.Write(h, binary.LittleEndian, cfg.Intensity)
 	_ = binary.Write(h, binary.LittleEndian, cfg.Modulation)
 	_ = binary.Write(h, binary.LittleEndian, cfg.Tempo)
 	_ = binary.Write(h, binary.LittleEndian, uint64(cfg.Resolution))
@@ -125,10 +125,6 @@ func (r *ExternalResampler) createTempWav(in aio.SampleReader, cfg ResampleConfi
 	}
 
 	if err := enc.Close(); err != nil {
-		return "", err
-	}
-
-	if err := f.Sync(); err != nil {
 		return "", err
 	}
 

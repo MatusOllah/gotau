@@ -53,13 +53,19 @@ type Note struct {
 	// Intensity is the loudness or intensity of the note (0.0 to 1.0).
 	Intensity float64
 
-	// Preutterance is the duration (in milliseconds) before note to start playback (in OTO). If it's omitted, falls back to OTO defaults.
+	// Velocity affects timing (smaller = more rushed; rarely used).
+	Velocity *float64
+
+	// Modulation is the modulation depth, mostly used for vibrato.
+	Modulation float64
+
+	// Preutterance is the duration (in milliseconds) before note to start playback (in oto). If it's omitted, falls back to oto defaults.
 	Preutterance *float64
 
-	// VoiceOverlap is the amount of overlap into the previous note. If it's omitted, falls back to OTO defaults.
+	// VoiceOverlap is the amount of overlap into the previous note. If it's omitted, falls back to oto defaults.
 	VoiceOverlap *float64
 
-	// StartPoint is the time where to begin sampling inside the audio file (in milliseconds). If it's omitted, falls back to OTO defaults.
+	// StartPoint is the time where to begin sampling inside the audio file (in milliseconds).
 	StartPoint *float64
 
 	// Envelope is the volume envelope curve. It should have at most 5 points.

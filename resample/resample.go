@@ -38,8 +38,8 @@ type ResampleConfig struct {
 	// Cutoff is the cutoff time in milliseconds (from oto).
 	Cutoff float64
 
-	// Volume is the volume of the note.
-	Volume float64
+	// Intensity is the volume of the note.
+	Intensity float64
 
 	// Modulation is the modulation (vibrato) depth.
 	Modulation float64

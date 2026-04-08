@@ -1,19 +1,24 @@
 package gotau
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"log"
+	"math"
 
+	"github.com/SladkyCitron/gotau/cache"
 	"github.com/SladkyCitron/gotau/concat"
 	"github.com/SladkyCitron/gotau/phonemizer"
 	"github.com/SladkyCitron/gotau/resample"
 	"github.com/SladkyCitron/gotau/sequence"
 	"github.com/SladkyCitron/gotau/voicebank"
+	"github.com/SladkyCitron/resona/afmt"
 	"github.com/SladkyCitron/resona/codec"
 	_ "github.com/SladkyCitron/resona/codec/au"
 	_ "github.com/SladkyCitron/resona/codec/qoa"
 	_ "github.com/SladkyCitron/resona/codec/wav"
+	"github.com/SladkyCitron/resona/freq"
 )
 
 const startBufSize = 4096 // Size of initial allocation for buffer
@@ -24,9 +29,11 @@ type Synth struct {
 	ph        phonemizer.Phonemizer
 	res       resample.Resampler
 	cat       concat.Concatenator
+	resCache  cache.Cache
 	sched     *scheduler
 	sr        int
 	buf       []float32
+	vbFileBuf bytes.Buffer
 	prevLyric string
 	nextLyric string
 }
@@ -34,13 +41,14 @@ type Synth struct {
 // New creates a new [Synth] with the given sample rate, voicebank, resampler, and concatenator.
 func New(sr int, vb *voicebank.Voicebank, res resample.Resampler, cat concat.Concatenator) *Synth {
 	s := &Synth{
-		vb:    vb,
-		ph:    &phonemizer.Default{},
-		res:   res,
-		cat:   cat,
-		sched: &scheduler{},
-		sr:    sr,
-		buf:   make([]float32, 0, startBufSize),
+		vb:       vb,
+		ph:       &phonemizer.Default{},
+		res:      res,
+		cat:      cat,
+		resCache: &cache.NopCache{},
+		sched:    &scheduler{},
+		sr:       sr,
+		buf:      make([]float32, 0, startBufSize),
 	}
 	return s
 }
@@ -55,6 +63,11 @@ func (s *Synth) Buffer(buf []float32) {
 // SetPhonemizer sets the phonemizer.
 func (s *Synth) SetPhonemizer(ph phonemizer.Phonemizer) {
 	s.ph = ph
+}
+
+// SetResampleCache sets the cache for storing resampled notes.
+func (s *Synth) SetResampleCache(c cache.Cache) {
+	s.resCache = c
 }
 
 // SetResolution sets the timing resolution in ticks per quarter note (TPQN).
@@ -181,8 +194,13 @@ func (s *Synth) renderNote(note sequence.Note) error {
 	if err != nil {
 		return err
 	}
+	defer f.Close()
 
-	deco, _, err := codec.Decode(f)
+	if _, err := io.Copy(&s.vbFileBuf, f); err != nil {
+		return err
+	}
+
+	deco, _, err := codec.Decode(bytes.NewReader(s.vbFileBuf.Bytes()))
 	if err != nil {
 		return err
 	}
@@ -190,17 +208,28 @@ func (s *Synth) renderNote(note sequence.Note) error {
 		return fmt.Errorf("voicebank (%d Hz) and synth (%d Hz) sample rate do not match", sr, s.sr)
 	}
 
-	/*
-		resampleCfg := resample.ResampleConfig{
-			Note:     note,
-			OtoEntry: otoEntry,
-		}
-		s.res.Resample(deco, resampleCfg)
-	*/
+	resampledLength := math.Ceil((newLength+s.getStartPoint(note)+25)/50) * 50
+	resampleCfg := resample.ResampleConfig{
+		Pitch:       note.Note,
+		Velocity:    s.getVelocity(note),
+		Flags:       note.Flags,
+		Offset:      otoEntry.Offset,
+		Length:      resampledLength,
+		Consonant:   otoEntry.Consonant,
+		Cutoff:      otoEntry.Cutoff,
+		Intensity:   note.Intensity,
+		Modulation:  note.Modulation,
+		Tempo:       s.sched.bpm,
+		Resolution:  s.sched.tpqn,
+		PitchBend:   note.PitchBend,
+		AudioFormat: afmt.Format{SampleRate: freq.Frequency(s.sr) * freq.Hertz, NumChannels: 1},
+	}
+	_ = resampleCfg
 
 	s.buf = append(s.buf, buf...)
 	s.sched.tickPos += note.Duration
 	s.prevLyric = note.Lyric
+	s.vbFileBuf.Reset()
 	return nil
 }
 
@@ -224,6 +253,20 @@ func (s *Synth) getPreutter(otoEntry voicebank.OtoEntry, note sequence.Note) flo
 		return *note.Preutterance
 	}
 	return otoEntry.Preutterance
+}
+
+func (s *Synth) getVelocity(note sequence.Note) float64 {
+	if note.Velocity != nil {
+		return *note.Velocity
+	}
+	return 0
+}
+
+func (s *Synth) getStartPoint(note sequence.Note) float64 {
+	if note.StartPoint != nil {
+		return *note.StartPoint * math.Pow(2, 1-s.getVelocity(note)/100)
+	}
+	return 0
 }
 
 func (s *Synth) debugLog(msg string, note sequence.Note) {
