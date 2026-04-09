@@ -29,7 +29,7 @@ type ResampleConfig struct {
 	// Offset is the offset time in milliseconds (from oto).
 	Offset float64
 
-	// Length is the desired length of the final resampled note.
+	// Length is the desired length of the final resampled note in milliseconds.
 	Length float64
 
 	// Consonant is the consonant duration in milliseconds (from oto).
