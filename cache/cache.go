@@ -12,7 +12,7 @@ var ErrNotFound = errors.New("cache: not found")
 // It is to prevent the need to allocate a []byte slice for the key.
 //
 // KeyFunc must be deterministic and must write identical bytes each time it is called.
-type KeyFunc func(w io.Writer) error
+type KeyFunc func(w io.Writer)
 
 // Cache is an interface for a simple key-value store for caching data.
 type Cache interface {

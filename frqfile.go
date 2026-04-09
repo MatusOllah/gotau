@@ -1,10 +1,6 @@
 package gotau
 
-import (
-	"path"
-	"strings"
-)
-
+/*
 func isFreqTableFile(_path string) bool {
 	switch strings.ToLower(path.Ext(_path)) {
 	case ".frq", ".dio", ".llsm", ".pmk": // the common ones
@@ -16,3 +12,4 @@ func isFreqTableFile(_path string) bool {
 	}
 	return false
 }
+*/

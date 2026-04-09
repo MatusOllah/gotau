@@ -26,9 +26,7 @@ func New() *Cache {
 
 func (c *Cache) hash(key cache.KeyFunc) (uint64, error) {
 	h := xxh3.New()
-	if err := key(h); err != nil {
-		return 0, err
-	}
+	key(h)
 	return h.Sum64(), nil
 }
 
