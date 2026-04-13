@@ -2,6 +2,7 @@ package gotau
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"log"
@@ -14,10 +15,11 @@ import (
 	"github.com/SladkyCitron/gotau/sequence"
 	"github.com/SladkyCitron/gotau/voicebank"
 	"github.com/SladkyCitron/resona/afmt"
+	"github.com/SladkyCitron/resona/aio"
 	"github.com/SladkyCitron/resona/codec"
 	_ "github.com/SladkyCitron/resona/codec/au"
 	_ "github.com/SladkyCitron/resona/codec/qoa"
-	_ "github.com/SladkyCitron/resona/codec/wav"
+	"github.com/SladkyCitron/resona/codec/wav"
 	"github.com/SladkyCitron/resona/freq"
 )
 
@@ -208,7 +210,8 @@ func (s *Synth) renderNote(note sequence.Note) error {
 		return fmt.Errorf("voicebank (%d Hz) and synth (%d Hz) sample rate do not match", sr, s.sr)
 	}
 
-	resampledLength := math.Ceil((newLength+s.getStartPoint(note)+25)/50) * 50
+	//resampledLength := math.Ceil((newLength+s.getStartPoint(note)+25)/50) * 50
+	resampledLength := math.Ceil((newLength + s.getStartPoint(note)))
 	resampleCfg := resample.ResampleConfig{
 		Pitch:       note.Note,
 		Velocity:    s.getVelocity(note),
@@ -224,7 +227,32 @@ func (s *Synth) renderNote(note sequence.Note) error {
 		PitchBend:   note.PitchBend,
 		AudioFormat: afmt.Format{SampleRate: freq.Frequency(s.sr) * freq.Hertz, NumChannels: 1},
 	}
-	_ = resampleCfg
+
+	var resampled aio.SampleReader
+	key := s.getKeyFunc(resampleCfg)
+	ctx := context.Background()
+	if rc, err := s.resCache.Open(ctx, key); err == nil {
+		resampled, err = wav.NewDecoder(rc)
+		if err != nil {
+			return err
+		}
+	} else {
+		/*
+			if err != cache.ErrNotFound {
+				// log error??
+			}
+		*/
+		resampled, err = s.res.Resample(deco, resampleCfg)
+		if err != nil {
+			return err
+		}
+
+		//TODO: cache resampled note
+	}
+
+	if _, err := resampled.ReadSamples(s.buf); err != nil && err != io.EOF {
+		return fmt.Errorf("failed to read resampled audio: %w", err)
+	}
 
 	s.buf = append(s.buf, buf...)
 	s.sched.tickPos += note.Duration
