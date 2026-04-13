@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"os"
+	"os/exec"
 	"time"
 
 	"github.com/SladkyCitron/enczip/zip"
@@ -66,7 +67,12 @@ func main() {
 	seq := ustFile.Sequence()
 
 	println("loading synth")
-	synth := gotau.New(44100, vb, resample.NewExternal("straycat-rs.exe", afmt.SampleFormat{16, afmt.SampleEncodingInt, binary.LittleEndian}), nil)
+	res := resample.NewExternal(`C:\Users\matus\Documents\Go\gotau\straycat-rs.exe`, afmt.SampleFormat{16, afmt.SampleEncodingInt, binary.LittleEndian})
+	res.ConfigureCmd = func(cmd *exec.Cmd) {
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+	}
+	synth := gotau.New(44100, vb, res, nil)
 	synth.SetPhonemizer(&phonemizer.JapaneseVCV{PrefixMap: vb.PrefixMap})
 	synth.EnqueueSequence(seq)
 

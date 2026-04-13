@@ -20,7 +20,10 @@ var _ Resampler = (*ExternalResampler)(nil)
 
 // ExternalResampler is a resampler that uses an external command-line UTAU resampler program to perform resampling.
 type ExternalResampler struct {
-	cmd       *exec.Cmd
+	// ConfigureCmd is an optional hook that allows configuring the exec.Cmd before running it.
+	ConfigureCmd func(cmd *exec.Cmd)
+
+	cmdName   string
 	sampleFmt afmt.SampleFormat
 }
 
@@ -30,12 +33,7 @@ type ExternalResampler struct {
 // The program should be a command-line UTAU resampler (e.g. resampler, moresampler, straycat, etc.)
 // that accepts input and output WAV file paths and other parameters as arguments and processes the input WAV file accordingly.
 func NewExternal(name string, sampleFmt afmt.SampleFormat) *ExternalResampler {
-	return &ExternalResampler{cmd: exec.Command(name), sampleFmt: sampleFmt}
-}
-
-// Cmd returns the command that will be executed for resampling.
-func (r *ExternalResampler) Cmd() *exec.Cmd {
-	return r.cmd
+	return &ExternalResampler{cmdName: name, sampleFmt: sampleFmt}
 }
 
 func (r *ExternalResampler) Resample(in aio.SampleReader, cfg ResampleConfig) (aio.SampleReader, error) {
@@ -46,12 +44,18 @@ func (r *ExternalResampler) Resample(in aio.SampleReader, cfg ResampleConfig) (a
 
 	output := input[:len(input)-len(filepath.Ext(input))] + "-out.wav"
 
-	r.cmd.Args = append([]string(nil),
+	flags := "g0"
+	if cfg.Flags != "" {
+		flags = cfg.Flags
+	}
+
+	cmd := exec.Command(
+		r.cmdName,
 		input,
 		output,
 		strconv.FormatInt(int64(cfg.Pitch), 10),
 		strconv.FormatFloat(cfg.Velocity, 'f', -1, 64),
-		cfg.Flags,
+		flags,
 		strconv.FormatFloat(cfg.Offset, 'f', -1, 64),
 		strconv.FormatFloat(cfg.Length, 'f', -1, 64),
 		strconv.FormatFloat(cfg.Consonant, 'f', -1, 64),
@@ -61,7 +65,10 @@ func (r *ExternalResampler) Resample(in aio.SampleReader, cfg ResampleConfig) (a
 		strconv.FormatFloat(cfg.Tempo, 'f', -1, 64),
 		pitch.EncodeResamplerPitchBendString(cfg.PitchBend, cfg.Pitch, cfg.Length, cfg.Tempo, cfg.Resolution),
 	)
-	if err := r.cmd.Run(); err != nil {
+	if r.ConfigureCmd != nil {
+		r.ConfigureCmd(cmd)
+	}
+	if err := cmd.Run(); err != nil {
 		return nil, fmt.Errorf("resample ExternalResampler: failed to run resampler command: %w", err)
 	}
 
@@ -80,7 +87,7 @@ func (r *ExternalResampler) Resample(in aio.SampleReader, cfg ResampleConfig) (a
 func (r *ExternalResampler) createTempWav(in aio.SampleReader, cfg ResampleConfig) (string, error) {
 	// create filename
 	h := xxh3.New()
-	_, _ = h.WriteString(r.cmd.Path)
+	_, _ = h.WriteString(r.cmdName)
 	_, _ = h.Write([]byte{byte(cfg.Pitch)})
 	_ = binary.Write(h, binary.LittleEndian, cfg.Velocity)
 	_, _ = h.WriteString(cfg.Flags)
