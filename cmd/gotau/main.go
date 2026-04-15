@@ -15,7 +15,7 @@ import (
 	"github.com/SladkyCitron/resona/freq"
 
 	"github.com/SladkyCitron/gotau/phonemizer"
-	"github.com/SladkyCitron/gotau/resample"
+	"github.com/SladkyCitron/gotau/resample/external"
 	"github.com/SladkyCitron/gotau/sequence/ust"
 	"github.com/SladkyCitron/gotau/voicebank"
 	"golang.org/x/text/encoding/japanese"
@@ -67,7 +67,7 @@ func main() {
 	seq := ustFile.Sequence()
 
 	println("loading synth")
-	res := resample.NewExternal(`C:\Users\matus\Documents\Go\gotau\straycat-rs.exe`, afmt.SampleFormat{16, afmt.SampleEncodingInt, binary.LittleEndian})
+	res := external.New(`C:\Users\matus\Documents\Go\gotau\straycat-rs.exe`, "_wav.sc", afmt.SampleFormat{16, afmt.SampleEncodingInt, binary.LittleEndian})
 	res.ConfigureCmd = func(cmd *exec.Cmd) {
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr

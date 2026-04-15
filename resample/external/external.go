@@ -1,4 +1,5 @@
-package resample
+// Package external implements an external resampler.
+package external
 
 import (
 	"bytes"
@@ -10,33 +11,38 @@ import (
 	"strconv"
 
 	"github.com/SladkyCitron/gotau/pitch"
+	"github.com/SladkyCitron/gotau/resample"
 	"github.com/SladkyCitron/resona/afmt"
 	"github.com/SladkyCitron/resona/aio"
 	"github.com/SladkyCitron/resona/codec/wav"
 	"github.com/zeebo/xxh3"
 )
 
-var _ Resampler = (*ExternalResampler)(nil)
+var _ resample.Resampler = (*ExternalResampler)(nil)
+
+//var _ resample.Analyzer = (*ExternalResampler)(nil)
 
 // ExternalResampler is a resampler that uses an external command-line UTAU resampler program to perform resampling.
 type ExternalResampler struct {
 	// ConfigureCmd is an optional hook that allows configuring the exec.Cmd before running it.
 	ConfigureCmd func(cmd *exec.Cmd)
 
-	cmdName   string
-	sampleFmt afmt.SampleFormat
+	cmdName     string
+	sampleFmt   afmt.SampleFormat
+	analysisExt string
 }
 
-// NewExternal creates a new [ExternalResampler] with the given program name and
+// New creates a new [ExternalResampler] with the given program name and
 // sample format for encoding temporary WAV files for passing into the resampler.
 //
 // The program should be a command-line UTAU resampler (e.g. resampler, moresampler, straycat, etc.)
-// that accepts input and output WAV file paths and other parameters as arguments and processes the input WAV file accordingly.
-func NewExternal(name string, sampleFmt afmt.SampleFormat) *ExternalResampler {
+// that accepts input and output WAV file paths, analysis sidecar files (optional), and
+// other parameters as arguments and processes the input WAV file accordingly.
+func New(name string, analysisExt string, sampleFmt afmt.SampleFormat) *ExternalResampler {
 	return &ExternalResampler{cmdName: name, sampleFmt: sampleFmt}
 }
 
-func (r *ExternalResampler) Resample(in aio.SampleReader, cfg ResampleConfig) (aio.SampleReader, error) {
+func (r *ExternalResampler) Resample(in aio.SampleReader, cfg resample.ResampleConfig) (aio.SampleReader, error) {
 	input, err := r.createTempWav(in, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("resample ExternalResampler: failed to create temporary wav file: %w", err)
@@ -84,7 +90,7 @@ func (r *ExternalResampler) Resample(in aio.SampleReader, cfg ResampleConfig) (a
 	return out, nil
 }
 
-func (r *ExternalResampler) createTempWav(in aio.SampleReader, cfg ResampleConfig) (string, error) {
+func (r *ExternalResampler) createTempWav(in aio.SampleReader, cfg resample.ResampleConfig) (string, error) {
 	// create filename
 	h := xxh3.New()
 	_, _ = h.WriteString(r.cmdName)
@@ -154,4 +160,8 @@ func (r *ExternalResampler) decodeOutFile(path string) (aio.SampleReader, error)
 	}
 
 	return deco, nil
+}
+
+func (r *ExternalResampler) AnalysisExt() string {
+	return r.analysisExt
 }

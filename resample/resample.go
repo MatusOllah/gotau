@@ -1,18 +1,38 @@
 package resample
 
 import (
+	"io"
+
 	"github.com/SladkyCitron/gotau/sequence"
 	"github.com/SladkyCitron/resona/afmt"
 	"github.com/SladkyCitron/resona/aio"
 	"gitlab.com/gomidi/midi/v2"
 )
 
-// Resampler is the interface for resamplers. It is responsible for resampling notes based on
-// the provided configuration (pitch, velocity, oto, pitch bend, etc.).
-//
-// It should also be deterministic, meaning that it should return the same output for the same input and configuration.
+// Resampler resamples an input voice sample into a rendered note waveform.
 type Resampler interface {
+	// Resample renders a note from the given input sample using the provided
+	// resampling configuration (pitch, velocity, oto settings, pitch bend, etc.).
 	Resample(in aio.SampleReader, cfg ResampleConfig) (aio.SampleReader, error)
+}
+
+// Analyzer is the interface for resamplers that are capable of analysis
+// and using per-sample analysis sidecar files (e.g. .frq, .llsm, .pmk) for F0/spectral features.
+type Analyzer interface {
+	Resampler
+
+	// ResampleWithAnalysis renders a note from the given input sample using the provided
+	// resampling configuration (pitch, velocity, oto settings, pitch bend, etc.) and
+	// analysis sidecar file. If analysis is nil, the resampler can generate a new one.
+	ResampleWithAnalysis(in aio.SampleReader, analysis io.Reader, cfg ResampleConfig) (aio.SampleReader, error)
+
+	// Analyze analyzes the given input sample and generates an analysis sidecar file.
+	// The file format and extension is determined by [Analyzer.AnalysisExt].
+	Analyze(in aio.SampleReader) ([]byte, error)
+
+	// AnalysisExt returns the file extension of the analysis sidecar file format
+	// used by this resampler (e.g. ".frq").
+	AnalysisExt() string
 }
 
 // ResampleConfig represents the configuration for passing into [Resampler.Resample].

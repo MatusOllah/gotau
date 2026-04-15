@@ -28,6 +28,12 @@ ex :
 resampler.exe infile.wav outfile.wav 120 100 GB60
 ```
 
+PowerShell oneliner for generating FRQs:
+
+```powershell
+ls -Filter *.wav -Recurse | ForEach-Object { c:/Users/matus/Documents/Go/gotau/straycat-rs.exe $_.FullName C:\Users\matus\AppData\Local\Temp\sc_genfrq.wav 0 0}
+```
+
 ## Wavtool
 
 ```text
