@@ -19,6 +19,12 @@ func TestEncodeResamplerPitchBendString(t *testing.T) {
 	assert.Equal(t, got, "AA#200#")
 }
 
+func TestEncodeResamplerPitchBendString_NilCurve(t *testing.T) {
+	got := pitch.EncodeResamplerPitchBendString(nil, 0, 1, 120, 480)
+
+	assert.Equal(t, got, "AA")
+}
+
 func BenchmarkEncodeResamplerPitchBendString(b *testing.B) {
 	curve := sequence.Curve{
 		{X: 0, Y: 10, Interp: sequence.CurveInterpolationLinear},

@@ -14,6 +14,10 @@ type int12 int16
 
 // EncodeResamplerPitchBendString encodes a pitch bend curve into the UTAU resampler pitch bend string format.
 func EncodeResamplerPitchBendString(curve sequence.Curve, note midi.Note, durationSec float64, tempo float64, tpqn int) string {
+	if len(curve) == 0 {
+		return "AA"
+	}
+
 	durationMs := durationSec * 1000
 	last := int12(math.MinInt16)
 	run := 0 // run length
