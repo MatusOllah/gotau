@@ -7,6 +7,8 @@ import (
 	"io"
 	"log"
 	"math"
+	"path/filepath"
+	"strings"
 
 	"github.com/SladkyCitron/gotau/cache"
 	"github.com/SladkyCitron/gotau/concat"
@@ -242,9 +244,26 @@ func (s *Synth) renderNote(note sequence.Note) error {
 				// log error??
 			}
 		*/
-		resampled, err = s.res.Resample(deco, resampleCfg)
-		if err != nil {
-			return err
+		if analyzer, ok := s.res.(resample.Analyzer); ok {
+			// check if there's the analysis sidecar file available
+			ext := filepath.Ext(otoEntry.FilePath())
+			name := otoEntry.FilePath()[:len(otoEntry.FilePath())-len(ext)]
+			analysisPath := name + strings.ReplaceAll(ext, ".", "_") + analyzer.AnalysisExt()
+			analysisFile, err := s.vb.FS().Open(analysisPath)
+			if err == nil {
+				resampled, err = analyzer.ResampleWithAnalysis(deco, analysisFile, resampleCfg)
+				if err != nil {
+					return fmt.Errorf("failed to resample: %w", err)
+				}
+				if err := analysisFile.Close(); err != nil {
+					return fmt.Errorf("failed to close analysis sidecar file: %w", err)
+				}
+			}
+		} else {
+			resampled, err = s.res.Resample(deco, resampleCfg)
+			if err != nil {
+				return fmt.Errorf("failed to resample: %w", err)
+			}
 		}
 
 		//TODO: cache resampled note
