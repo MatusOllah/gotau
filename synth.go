@@ -258,6 +258,12 @@ func (s *Synth) renderNote(note sequence.Note) error {
 				if err := analysisFile.Close(); err != nil {
 					return fmt.Errorf("failed to close analysis sidecar file: %w", err)
 				}
+			} else {
+				// nope
+				resampled, err = s.res.Resample(deco, resampleCfg)
+				if err != nil {
+					return fmt.Errorf("failed to resample: %w", err)
+				}
 			}
 		} else {
 			resampled, err = s.res.Resample(deco, resampleCfg)
