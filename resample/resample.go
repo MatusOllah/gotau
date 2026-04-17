@@ -28,7 +28,8 @@ type Analyzer interface {
 
 	// Analyze analyzes the given input sample and generates an analysis sidecar file.
 	// The file format and extension is determined by [Analyzer.AnalysisExt].
-	Analyze(in aio.SampleReader) ([]byte, error)
+	// Closing is the caller's responsibility.
+	Analyze(in aio.SampleReader, format afmt.Format) (io.ReadCloser, error)
 
 	// AnalysisExt returns the file extension of the analysis sidecar file format
 	// used by this resampler (e.g. ".frq").

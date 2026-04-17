@@ -5,10 +5,12 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/SladkyCitron/gotau/pitch"
 	"github.com/SladkyCitron/gotau/resample"
@@ -18,9 +20,7 @@ import (
 	"github.com/zeebo/xxh3"
 )
 
-var _ resample.Resampler = (*ExternalResampler)(nil)
-
-//var _ resample.Analyzer = (*ExternalResampler)(nil)
+var _ resample.Analyzer = (*ExternalResampler)(nil)
 
 // ExternalResampler is a resampler that uses an external command-line UTAU resampler program to perform resampling.
 type ExternalResampler struct {
@@ -45,7 +45,7 @@ func New(name string, analysisExt string, sampleFmt afmt.SampleFormat) *External
 func (r *ExternalResampler) Resample(in aio.SampleReader, cfg resample.ResampleConfig) (aio.SampleReader, error) {
 	input, err := r.createTempWav(in, cfg)
 	if err != nil {
-		return nil, fmt.Errorf("resample ExternalResampler: failed to create temporary wav file: %w", err)
+		return nil, fmt.Errorf("external: failed to create temporary wav file: %w", err)
 	}
 
 	output := input[:len(input)-len(filepath.Ext(input))] + "-out.wav"
@@ -75,19 +75,143 @@ func (r *ExternalResampler) Resample(in aio.SampleReader, cfg resample.ResampleC
 		r.ConfigureCmd(cmd)
 	}
 	if err := cmd.Run(); err != nil {
-		return nil, fmt.Errorf("resample ExternalResampler: failed to run resampler command: %w", err)
+		return nil, fmt.Errorf("external: failed to run resampler command: %w", err)
 	}
 
 	if err := os.Remove(input); err != nil {
-		return nil, fmt.Errorf("resample ExternalResampler: failed to remove temporary wav file: %w", err)
+		return nil, fmt.Errorf("external: failed to remove temporary wav file: %w", err)
 	}
 
 	out, err := r.decodeOutFile(output)
 	if err != nil {
-		return nil, fmt.Errorf("resample ExternalResampler: failed to decode output wav file: %w", err)
+		return nil, fmt.Errorf("external: failed to decode output wav file: %w", err)
 	}
 
 	return out, nil
+}
+
+func (r *ExternalResampler) ResampleWithAnalysis(in aio.SampleReader, analysis io.Reader, cfg resample.ResampleConfig) (aio.SampleReader, error) {
+	if analysis == nil {
+		return r.Resample(in, cfg)
+	}
+
+	input, err := r.createTempWav(in, cfg)
+	if err != nil {
+		return nil, fmt.Errorf("external: failed to create temporary wav file: %w", err)
+	}
+
+	analysisPath, err := r.createTempAnalysis(analysis, input)
+	if err != nil {
+		return nil, fmt.Errorf("external: failed to create temporary analysis sidecar file: %w", err)
+	}
+
+	output := input[:len(input)-len(filepath.Ext(input))] + "-out.wav"
+
+	flags := "g0"
+	if cfg.Flags != "" {
+		flags = cfg.Flags
+	}
+
+	cmd := exec.Command(
+		r.cmdName,
+		input,
+		output,
+		strconv.FormatInt(int64(cfg.Pitch), 10),
+		strconv.FormatFloat(cfg.Velocity, 'f', -1, 64),
+		flags,
+		strconv.FormatFloat(cfg.Offset, 'f', -1, 64),
+		strconv.FormatFloat(cfg.Length, 'f', -1, 64),
+		strconv.FormatFloat(cfg.Consonant, 'f', -1, 64),
+		strconv.FormatFloat(cfg.Cutoff, 'f', -1, 64),
+		strconv.FormatFloat(cfg.Intensity*100, 'f', -1, 64),
+		strconv.FormatFloat(cfg.Modulation, 'f', -1, 64),
+		strconv.FormatFloat(cfg.Tempo, 'f', -1, 64),
+		pitch.EncodeResamplerPitchBendString(cfg.PitchBend, cfg.Pitch, cfg.Length, cfg.Tempo, cfg.Resolution),
+	)
+	if r.ConfigureCmd != nil {
+		r.ConfigureCmd(cmd)
+	}
+	if err := cmd.Run(); err != nil {
+		return nil, fmt.Errorf("external: failed to run resampler command: %w", err)
+	}
+
+	if err := os.Remove(input); err != nil {
+		return nil, fmt.Errorf("external: failed to remove temporary wav file: %w", err)
+	}
+
+	if err := os.Remove(analysisPath); err != nil {
+		return nil, fmt.Errorf("external: failed to remove temporary wav file: %w", err)
+	}
+
+	out, err := r.decodeOutFile(output)
+	if err != nil {
+		return nil, fmt.Errorf("external: failed to decode output wav file: %w", err)
+	}
+
+	return out, nil
+}
+
+func (r *ExternalResampler) Analyze(in aio.SampleReader, format afmt.Format) (io.ReadCloser, error) {
+	input, err := os.CreateTemp("", "gotau-externalresampler-analysis-*.wav")
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = os.Remove(input.Name()) }() // clean up
+
+	var wavFormat uint16
+	switch r.sampleFmt.Encoding {
+	case afmt.SampleEncodingInt, afmt.SampleEncodingUint:
+		wavFormat = wav.FormatInt
+	case afmt.SampleEncodingFloat:
+		wavFormat = wav.FormatFloat
+	default:
+		_ = input.Close()
+		return nil, fmt.Errorf("invalid sample format: %s", r.sampleFmt.String())
+	}
+	enc, err := wav.NewEncoder(input, format, r.sampleFmt, wavFormat)
+	if err != nil {
+		_ = input.Close()
+		return nil, err
+	}
+
+	if _, err := aio.Copy(enc, in); err != nil {
+		_ = input.Close()
+		return nil, err
+	}
+
+	if err := enc.Close(); err != nil {
+		_ = input.Close()
+		return nil, err
+	}
+
+	if err := input.Close(); err != nil {
+		return nil, err
+	}
+
+	dummyOutput := input.Name()[:len(input.Name())-len(filepath.Ext(input.Name()))] + "-out.wav"
+
+	cmd := exec.Command(r.cmdName, input.Name(), dummyOutput, "0", "0", "G")
+	if r.ConfigureCmd != nil {
+		r.ConfigureCmd(cmd)
+	}
+	if err := cmd.Run(); err != nil {
+		return nil, fmt.Errorf("external: failed to run resampler command: %w", err)
+	}
+
+	if err := os.Remove(dummyOutput); err != nil {
+		return nil, fmt.Errorf("external: failed to remove dummy output file: %w", err)
+	}
+
+	// most resamplers accept e.g. something_wav.frq
+	ext := filepath.Ext(input.Name())
+	extless := input.Name()[:len(input.Name())-len(ext)]
+	analysisPath := extless + strings.ReplaceAll(ext, ".", "_") + r.analysisExt
+
+	return openTemp(analysisPath)
+}
+
+func (r *ExternalResampler) AnalysisExt() string {
+	return r.analysisExt
 }
 
 func (r *ExternalResampler) createTempWav(in aio.SampleReader, cfg resample.ResampleConfig) (string, error) {
@@ -144,6 +268,25 @@ func (r *ExternalResampler) createTempWav(in aio.SampleReader, cfg resample.Resa
 	return path, nil
 }
 
+func (r *ExternalResampler) createTempAnalysis(analysis io.Reader, wavPath string) (string, error) {
+	// most resamplers accept e.g. something_wav.frq
+	ext := filepath.Ext(wavPath)
+	extless := wavPath[:len(wavPath)-len(ext)]
+	newPath := extless + strings.ReplaceAll(ext, ".", "_") + r.analysisExt
+
+	f, err := os.Create(newPath)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	if _, err := io.Copy(f, analysis); err != nil {
+		return "", err
+	}
+
+	return newPath, nil
+}
+
 func (r *ExternalResampler) decodeOutFile(path string) (aio.SampleReader, error) {
 	b, err := os.ReadFile(path)
 	if err != nil {
@@ -160,8 +303,4 @@ func (r *ExternalResampler) decodeOutFile(path string) (aio.SampleReader, error)
 	}
 
 	return deco, nil
-}
-
-func (r *ExternalResampler) AnalysisExt() string {
-	return r.analysisExt
 }

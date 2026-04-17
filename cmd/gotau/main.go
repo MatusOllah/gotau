@@ -67,7 +67,7 @@ func main() {
 	seq := ustFile.Sequence()
 
 	println("loading synth")
-	res := external.New(`C:\Users\matus\Documents\Go\gotau\straycat-rs.exe`, "_wav.sc", afmt.SampleFormat{16, afmt.SampleEncodingInt, binary.LittleEndian})
+	res := external.New(`C:\Users\matus\Documents\Go\gotau\straycat-rs.exe`, ".sc", afmt.SampleFormat{16, afmt.SampleEncodingInt, binary.LittleEndian})
 	res.ConfigureCmd = func(cmd *exec.Cmd) {
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
