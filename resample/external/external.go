@@ -68,7 +68,7 @@ func (r *ExternalResampler) Resample(in aio.SampleReader, cfg resample.ResampleC
 		strconv.FormatFloat(cfg.Cutoff, 'f', -1, 64),
 		strconv.FormatFloat(cfg.Intensity*100, 'f', -1, 64),
 		strconv.FormatFloat(cfg.Modulation, 'f', -1, 64),
-		strconv.FormatFloat(cfg.Tempo, 'f', -1, 64),
+		"T"+strconv.FormatFloat(cfg.Tempo, 'f', -1, 64),
 		pitch.EncodeResamplerPitchBendString(cfg.PitchBend, cfg.Pitch, cfg.Length, cfg.Tempo, cfg.Resolution),
 	)
 	if r.ConfigureCmd != nil {
@@ -125,7 +125,7 @@ func (r *ExternalResampler) ResampleWithAnalysis(in aio.SampleReader, analysis i
 		strconv.FormatFloat(cfg.Cutoff, 'f', -1, 64),
 		strconv.FormatFloat(cfg.Intensity*100, 'f', -1, 64),
 		strconv.FormatFloat(cfg.Modulation, 'f', -1, 64),
-		strconv.FormatFloat(cfg.Tempo, 'f', -1, 64),
+		"T"+strconv.FormatFloat(cfg.Tempo, 'f', -1, 64),
 		pitch.EncodeResamplerPitchBendString(cfg.PitchBend, cfg.Pitch, cfg.Length, cfg.Tempo, cfg.Resolution),
 	)
 	if r.ConfigureCmd != nil {
