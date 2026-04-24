@@ -178,6 +178,7 @@ func (s *Synth) renderNote(note sequence.Note) error {
 
 	// oto entry not found; emit silence instead
 	if !otoOk {
+		s.debugLog("fallback silence", note)
 		buf := make([]float32, int((s.sched.ticksToSeconds(note.Duration)-nextPreutterSec)*float64(s.sr)))
 		s.buf = append(s.buf, buf...)
 		s.sched.tickPos += note.Duration
@@ -200,6 +201,7 @@ func (s *Synth) renderNote(note sequence.Note) error {
 	}
 	defer f.Close()
 
+	s.vbFileBuf.Reset()
 	if _, err := io.Copy(&s.vbFileBuf, f); err != nil {
 		return err
 	}
@@ -212,14 +214,13 @@ func (s *Synth) renderNote(note sequence.Note) error {
 		return fmt.Errorf("voicebank (%d Hz) and synth (%d Hz) sample rate do not match", sr, s.sr)
 	}
 
-	//resampledLength := math.Ceil((newLength+s.getStartPoint(note)+25)/50) * 50
-	resampledLength := math.Ceil((newLength + s.getStartPoint(note)))
+	newLength = math.Ceil((newLength+s.getStartPoint(note)+25)/50) * 5000
 	resampleCfg := resample.ResampleConfig{
 		Pitch:       note.Note,
 		Velocity:    s.getVelocity(note),
 		Flags:       note.Flags,
 		Offset:      otoEntry.Offset,
-		Length:      resampledLength,
+		Length:      newLength,
 		Consonant:   otoEntry.Consonant,
 		Cutoff:      otoEntry.Cutoff,
 		Intensity:   note.Intensity,
@@ -239,11 +240,6 @@ func (s *Synth) renderNote(note sequence.Note) error {
 			return err
 		}
 	} else {
-		/*
-			if err != cache.ErrNotFound {
-				// log error??
-			}
-		*/
 		if analyzer, ok := s.res.(resample.Analyzer); ok {
 			// check if there's the analysis sidecar file available
 			ext := filepath.Ext(otoEntry.FilePath())
@@ -275,14 +271,13 @@ func (s *Synth) renderNote(note sequence.Note) error {
 		//TODO: cache resampled note
 	}
 
-	if _, err := resampled.ReadSamples(s.buf); err != nil && err != io.EOF {
+	if _, err := resampled.ReadSamples(buf); err != nil && err != io.EOF {
 		return fmt.Errorf("failed to read resampled audio: %w", err)
 	}
 
 	s.buf = append(s.buf, buf...)
 	s.sched.tickPos += note.Duration
 	s.prevLyric = note.Lyric
-	s.vbFileBuf.Reset()
 	return nil
 }
 

@@ -50,7 +50,7 @@ func (r *ExternalResampler) Resample(in aio.SampleReader, cfg resample.ResampleC
 
 	output := input[:len(input)-len(filepath.Ext(input))] + "-out.wav"
 
-	flags := "g0"
+	flags := "?"
 	if cfg.Flags != "" {
 		flags = cfg.Flags
 	}
@@ -60,14 +60,14 @@ func (r *ExternalResampler) Resample(in aio.SampleReader, cfg resample.ResampleC
 		input,
 		output,
 		strconv.FormatInt(int64(cfg.Pitch), 10),
-		strconv.FormatFloat(cfg.Velocity, 'f', -1, 64),
+		strconv.FormatInt(int64(cfg.Velocity*100), 10),
 		flags,
 		strconv.FormatFloat(cfg.Offset, 'f', -1, 64),
 		strconv.FormatFloat(cfg.Length, 'f', -1, 64),
 		strconv.FormatFloat(cfg.Consonant, 'f', -1, 64),
 		strconv.FormatFloat(cfg.Cutoff, 'f', -1, 64),
-		strconv.FormatFloat(cfg.Intensity*100, 'f', -1, 64),
-		strconv.FormatFloat(cfg.Modulation, 'f', -1, 64),
+		strconv.FormatInt(int64(cfg.Intensity*100), 10),
+		strconv.FormatInt(int64(cfg.Modulation*100), 10),
 		"T"+strconv.FormatFloat(cfg.Tempo, 'f', -1, 64),
 		pitch.EncodeResamplerPitchBendString(cfg.PitchBend, cfg.Pitch, cfg.Length, cfg.Tempo, cfg.Resolution),
 	)
@@ -107,7 +107,7 @@ func (r *ExternalResampler) ResampleWithAnalysis(in aio.SampleReader, analysis i
 
 	output := input[:len(input)-len(filepath.Ext(input))] + "-out.wav"
 
-	flags := "g0"
+	flags := "?"
 	if cfg.Flags != "" {
 		flags = cfg.Flags
 	}
@@ -117,14 +117,14 @@ func (r *ExternalResampler) ResampleWithAnalysis(in aio.SampleReader, analysis i
 		input,
 		output,
 		strconv.FormatInt(int64(cfg.Pitch), 10),
-		strconv.FormatFloat(cfg.Velocity, 'f', -1, 64),
+		strconv.FormatInt(int64(cfg.Velocity*100), 10),
 		flags,
 		strconv.FormatFloat(cfg.Offset, 'f', -1, 64),
 		strconv.FormatFloat(cfg.Length, 'f', -1, 64),
 		strconv.FormatFloat(cfg.Consonant, 'f', -1, 64),
 		strconv.FormatFloat(cfg.Cutoff, 'f', -1, 64),
-		strconv.FormatFloat(cfg.Intensity*100, 'f', -1, 64),
-		strconv.FormatFloat(cfg.Modulation, 'f', -1, 64),
+		strconv.FormatInt(int64(cfg.Intensity*100), 10),
+		strconv.FormatInt(int64(cfg.Modulation*100), 10),
 		"T"+strconv.FormatFloat(cfg.Tempo, 'f', -1, 64),
 		pitch.EncodeResamplerPitchBendString(cfg.PitchBend, cfg.Pitch, cfg.Length, cfg.Tempo, cfg.Resolution),
 	)

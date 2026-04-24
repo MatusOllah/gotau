@@ -73,7 +73,7 @@ func main() {
 		cmd.Stderr = os.Stderr
 	}
 	synth := gotau.New(44100, vb, res, nil)
-	synth.SetPhonemizer(&phonemizer.JapaneseVCV{PrefixMap: vb.PrefixMap})
+	synth.SetPhonemizer(&phonemizer.CV{PrefixMap: vb.PrefixMap})
 	synth.EnqueueSequence(seq)
 
 	outFile, err := os.Create(os.Args[3])
