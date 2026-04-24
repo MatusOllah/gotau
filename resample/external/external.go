@@ -39,7 +39,7 @@ type ExternalResampler struct {
 // that accepts input and output WAV file paths, analysis sidecar files (optional), and
 // other parameters as arguments and processes the input WAV file accordingly.
 func New(name string, analysisExt string, sampleFmt afmt.SampleFormat) *ExternalResampler {
-	return &ExternalResampler{cmdName: name, sampleFmt: sampleFmt}
+	return &ExternalResampler{cmdName: name, sampleFmt: sampleFmt, analysisExt: analysisExt}
 }
 
 func (r *ExternalResampler) Resample(in aio.SampleReader, cfg resample.ResampleConfig) (aio.SampleReader, error) {
