@@ -20,10 +20,10 @@ import (
 	"github.com/zeebo/xxh3"
 )
 
-var _ resample.Analyzer = (*ExternalResampler)(nil)
+var _ resample.Analyzer = (*Resampler)(nil)
 
-// ExternalResampler is a resampler that uses an external command-line UTAU resampler program to perform resampling.
-type ExternalResampler struct {
+// Resampler is a resampler that uses an external command-line UTAU resampler program to perform resampling.
+type Resampler struct {
 	// ConfigureCmd is an optional hook that allows configuring the exec.Cmd before running it.
 	ConfigureCmd func(cmd *exec.Cmd)
 
@@ -32,17 +32,17 @@ type ExternalResampler struct {
 	analysisExt string
 }
 
-// New creates a new [ExternalResampler] with the given program name and
+// New creates a new [Resampler] with the given program name and
 // sample format for encoding temporary WAV files for passing into the resampler.
 //
 // The program should be a command-line UTAU resampler (e.g. resampler, moresampler, straycat, etc.)
 // that accepts input and output WAV file paths, analysis sidecar files (optional), and
 // other parameters as arguments and processes the input WAV file accordingly.
-func New(name string, analysisExt string, sampleFmt afmt.SampleFormat) *ExternalResampler {
-	return &ExternalResampler{cmdName: name, sampleFmt: sampleFmt, analysisExt: analysisExt}
+func New(name string, analysisExt string, sampleFmt afmt.SampleFormat) *Resampler {
+	return &Resampler{cmdName: name, sampleFmt: sampleFmt, analysisExt: analysisExt}
 }
 
-func (r *ExternalResampler) Resample(in aio.SampleReader, cfg resample.ResampleConfig) (aio.SampleReader, error) {
+func (r *Resampler) Resample(in aio.SampleReader, cfg resample.ResampleConfig) (aio.SampleReader, error) {
 	input, err := r.createTempWav(in, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("external: failed to create temporary wav file: %w", err)
@@ -90,7 +90,7 @@ func (r *ExternalResampler) Resample(in aio.SampleReader, cfg resample.ResampleC
 	return out, nil
 }
 
-func (r *ExternalResampler) ResampleWithAnalysis(in aio.SampleReader, analysis io.Reader, cfg resample.ResampleConfig) (aio.SampleReader, error) {
+func (r *Resampler) ResampleWithAnalysis(in aio.SampleReader, analysis io.Reader, cfg resample.ResampleConfig) (aio.SampleReader, error) {
 	if analysis == nil {
 		return r.Resample(in, cfg)
 	}
@@ -151,7 +151,7 @@ func (r *ExternalResampler) ResampleWithAnalysis(in aio.SampleReader, analysis i
 	return out, nil
 }
 
-func (r *ExternalResampler) Analyze(in aio.SampleReader, format afmt.Format) (io.ReadCloser, error) {
+func (r *Resampler) Analyze(in aio.SampleReader, format afmt.Format) (io.ReadCloser, error) {
 	input, err := os.CreateTemp("", "gotau-externalresampler-analysis-*.wav")
 	if err != nil {
 		return nil, err
@@ -210,11 +210,11 @@ func (r *ExternalResampler) Analyze(in aio.SampleReader, format afmt.Format) (io
 	return openTemp(analysisPath)
 }
 
-func (r *ExternalResampler) AnalysisExt() string {
+func (r *Resampler) AnalysisExt() string {
 	return r.analysisExt
 }
 
-func (r *ExternalResampler) createTempWav(in aio.SampleReader, cfg resample.ResampleConfig) (string, error) {
+func (r *Resampler) createTempWav(in aio.SampleReader, cfg resample.ResampleConfig) (string, error) {
 	// create filename
 	h := xxh3.New()
 	_, _ = h.WriteString(r.cmdName)
@@ -268,7 +268,7 @@ func (r *ExternalResampler) createTempWav(in aio.SampleReader, cfg resample.Resa
 	return path, nil
 }
 
-func (r *ExternalResampler) createTempAnalysis(analysis io.Reader, wavPath string) (string, error) {
+func (r *Resampler) createTempAnalysis(analysis io.Reader, wavPath string) (string, error) {
 	// most resamplers accept e.g. something_wav.frq
 	ext := filepath.Ext(wavPath)
 	extless := wavPath[:len(wavPath)-len(ext)]
@@ -287,7 +287,7 @@ func (r *ExternalResampler) createTempAnalysis(analysis io.Reader, wavPath strin
 	return newPath, nil
 }
 
-func (r *ExternalResampler) decodeOutFile(path string) (aio.SampleReader, error) {
+func (r *Resampler) decodeOutFile(path string) (aio.SampleReader, error) {
 	b, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
