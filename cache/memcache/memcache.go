@@ -72,11 +72,15 @@ func (c *Cache) Create(ctx context.Context, key cache.KeyFunc) (cache.BlobWriter
 type blobWriter struct {
 	c    *Cache
 	hash uint64
-	buf  bytes.Buffer
+	buf  Buffer
 }
 
 func (w *blobWriter) Write(p []byte) (int, error) {
 	return w.buf.Write(p)
+}
+
+func (w *blobWriter) Seek(offset int64, whence int) (int64, error) {
+	return w.buf.Seek(offset, whence)
 }
 
 func (w *blobWriter) Close() error {

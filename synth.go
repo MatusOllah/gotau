@@ -3,6 +3,7 @@ package gotau
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"log"
@@ -268,7 +269,38 @@ func (s *Synth) renderNote(note sequence.Note) error {
 			}
 		}
 
-		//TODO: cache resampled note
+		// cache the resampled audio
+		f, err := s.resCache.Create(ctx, key)
+		if err != nil {
+			_ = f.Abort()
+			return fmt.Errorf("failed to create cache entry: %w", err)
+		}
+
+		enc, err := wav.NewEncoder(
+			f,
+			resampleCfg.AudioFormat,
+			afmt.SampleFormat{BitDepth: 32, Encoding: afmt.SampleEncodingFloat, Endian: binary.LittleEndian},
+			wav.FormatFloat,
+		)
+		if err != nil {
+			_ = f.Abort()
+			return fmt.Errorf("failed to create wav encoder for caching: %w", err)
+		}
+
+		if _, err := aio.Copy(enc, resampled); err != nil {
+			_ = f.Abort()
+			return fmt.Errorf("failed to cache resampled audio: %w", err)
+		}
+
+		if err := enc.Close(); err != nil {
+			_ = f.Abort()
+			return fmt.Errorf("failed to close wav encoder for caching: %w", err)
+		}
+
+		if err := f.Close(); err != nil {
+			_ = f.Abort()
+			return fmt.Errorf("failed to close cache entry: %w", err)
+		}
 	}
 
 	if _, err := resampled.ReadSamples(buf); err != nil && err != io.EOF {

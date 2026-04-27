@@ -24,6 +24,10 @@ func (c *nopBlobWriter) Write(_ []byte) (int, error) {
 	return 0, nil
 }
 
+func (c *nopBlobWriter) Seek(_ int64, _ int) (int64, error) {
+	return 0, nil
+}
+
 func (c *nopBlobWriter) Close() error {
 	return nil
 }

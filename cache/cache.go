@@ -25,7 +25,9 @@ type Cache interface {
 
 // BlobWriter is an interface for writing data to the cache. It is returned by [Cache.Create] and should be closed when done.
 type BlobWriter interface {
-	io.WriteCloser
+	io.Writer
+	io.Seeker
+	io.Closer
 
 	// Abort aborts the write operation and discards any temporary data.
 	Abort() error
