@@ -5,7 +5,6 @@ package memcache
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"io"
 	"sync"
 
@@ -58,10 +57,7 @@ func (c *Cache) Create(ctx context.Context, key cache.KeyFunc) (cache.BlobWriter
 	default:
 	}
 
-	hash, err := c.hash(key)
-	if err != nil {
-		return nil, fmt.Errorf("memcache: failed to hash key: %w", err)
-	}
+	hash := c.hash(key)
 
 	return &blobWriter{c: c, hash: hash}, nil
 }
