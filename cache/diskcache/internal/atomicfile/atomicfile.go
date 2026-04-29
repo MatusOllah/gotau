@@ -39,15 +39,15 @@ func (f *File) Close() error {
 	}
 	if err := f.File.Sync(); err != nil {
 		_ = f.File.Close()
-		_ = os.Remove(f.File.Name())
+		_ = os.Remove(f.Name())
 		return err
 	}
 	if err := f.File.Close(); err != nil {
-		_ = os.Remove(f.File.Name())
+		_ = os.Remove(f.Name())
 		return err
 	}
-	if err := atomicRename(f.File.Name(), f.path); err != nil {
-		_ = os.Remove(f.File.Name())
+	if err := atomicRename(f.Name(), f.path); err != nil {
+		_ = os.Remove(f.Name())
 		return err
 	}
 	if err := syncDir(f.dir); err != nil {
@@ -63,10 +63,10 @@ func (f *File) Abort() error {
 		return nil
 	}
 	if err := f.File.Close(); err != nil {
-		_ = os.Remove(f.File.Name())
+		_ = os.Remove(f.Name())
 		return err
 	}
-	if err := os.Remove(f.File.Name()); err != nil {
+	if err := os.Remove(f.Name()); err != nil {
 		return err
 	}
 	f.done = true
