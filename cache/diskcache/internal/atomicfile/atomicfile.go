@@ -37,7 +37,7 @@ func (f *File) Close() error {
 	if f.done {
 		return nil
 	}
-	if err := f.File.Sync(); err != nil {
+	if err := f.Sync(); err != nil {
 		_ = f.File.Close()
 		_ = os.Remove(f.Name())
 		return err
