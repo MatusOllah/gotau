@@ -24,10 +24,10 @@ func New() *Cache {
 	return &Cache{blobs: make(map[uint64][]byte)}
 }
 
-func (c *Cache) hash(key cache.KeyFunc) (uint64, error) {
+func (c *Cache) hash(key cache.KeyFunc) uint64 {
 	h := xxh3.New()
 	key(h)
-	return h.Sum64(), nil
+	return h.Sum64()
 }
 
 func (c *Cache) Open(ctx context.Context, key cache.KeyFunc) (io.ReadCloser, error) {
@@ -37,10 +37,7 @@ func (c *Cache) Open(ctx context.Context, key cache.KeyFunc) (io.ReadCloser, err
 	default:
 	}
 
-	hash, err := c.hash(key)
-	if err != nil {
-		return nil, fmt.Errorf("memcache: failed to hash key: %w", err)
-	}
+	hash := c.hash(key)
 
 	c.mu.RLock()
 	blob, ok := c.blobs[hash]
