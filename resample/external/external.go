@@ -68,7 +68,7 @@ func (r *Resampler) Resample(in aio.SampleReader, cfg resample.ResampleConfig) (
 		strconv.FormatFloat(cfg.Cutoff, 'f', -1, 64),
 		strconv.FormatInt(int64(cfg.Intensity*100), 10),
 		strconv.FormatInt(int64(cfg.Modulation*100), 10),
-		"T"+strconv.FormatFloat(cfg.Tempo, 'f', -1, 64),
+		"!"+strconv.FormatFloat(cfg.Tempo, 'f', -1, 64), // apparently the tempo starts with "!" and not "T"???
 		pitch.EncodeResamplerPitchBendString(cfg.PitchBend, cfg.Pitch, cfg.Length, cfg.Tempo, cfg.Resolution),
 	)
 	if r.ConfigureCmd != nil {
@@ -125,7 +125,7 @@ func (r *Resampler) ResampleWithAnalysis(in aio.SampleReader, analysis io.Reader
 		strconv.FormatFloat(cfg.Cutoff, 'f', -1, 64),
 		strconv.FormatInt(int64(cfg.Intensity*100), 10),
 		strconv.FormatInt(int64(cfg.Modulation*100), 10),
-		"T"+strconv.FormatFloat(cfg.Tempo, 'f', -1, 64),
+		"!"+strconv.FormatFloat(cfg.Tempo, 'f', -1, 64),
 		pitch.EncodeResamplerPitchBendString(cfg.PitchBend, cfg.Pitch, cfg.Length, cfg.Tempo, cfg.Resolution),
 	)
 	if r.ConfigureCmd != nil {
@@ -190,7 +190,7 @@ func (r *Resampler) Analyze(in aio.SampleReader, format afmt.Format) (io.ReadClo
 
 	dummyOutput := input.Name()[:len(input.Name())-len(filepath.Ext(input.Name()))] + "-out.wav"
 
-	cmd := exec.Command(r.cmdName, input.Name(), dummyOutput, "0", "0", "G")
+	cmd := exec.Command(r.cmdName, input.Name(), dummyOutput, "0", "0", "GN")
 	if r.ConfigureCmd != nil {
 		r.ConfigureCmd(cmd)
 	}
