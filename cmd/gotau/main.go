@@ -14,10 +14,12 @@ import (
 	"github.com/SladkyCitron/resona/codec/wav"
 	"github.com/SladkyCitron/resona/freq"
 
+	"github.com/SladkyCitron/gotau/cache/diskcache"
 	"github.com/SladkyCitron/gotau/phonemizer"
 	"github.com/SladkyCitron/gotau/resample/external"
 	"github.com/SladkyCitron/gotau/sequence/ust"
 	"github.com/SladkyCitron/gotau/voicebank"
+	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/japanese"
 )
 
@@ -31,7 +33,7 @@ func main() {
 
 	println("loading voicebank")
 
-	zr, err := zip.OpenReader(os.Args[1], japanese.ShiftJIS)
+	zr, err := zip.OpenReader(os.Args[1], encoding.Nop)
 	if err != nil {
 		panic(err)
 	}
@@ -69,11 +71,13 @@ func main() {
 	println("loading synth")
 	res := external.New(`C:\Users\matus\Documents\Go\gotau\straycat-rs.exe`, ".sc", afmt.SampleFormat{16, afmt.SampleEncodingInt, binary.LittleEndian})
 	res.ConfigureCmd = func(cmd *exec.Cmd) {
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
+		//cmd.Stdout = os.Stdout
+		//cmd.Stderr = os.Stderr
 	}
 	synth := gotau.New(44100, vb, res, nil)
 	synth.SetPhonemizer(&phonemizer.CV{PrefixMap: vb.PrefixMap})
+	cacheDir, _ := diskcache.Dir(gotau.ResamplerDiskCacheDir)
+	synth.SetResampleCache(diskcache.New(cacheDir, gotau.ResamplerDiskCacheExt))
 	synth.EnqueueSequence(seq)
 
 	outFile, err := os.Create(os.Args[3])
