@@ -70,8 +70,8 @@ func (s *Synth) SetPhonemizer(ph phonemizer.Phonemizer) {
 	s.ph = ph
 }
 
-// SetResampleCache sets the cache for storing resampled notes.
-func (s *Synth) SetResampleCache(c cache.Cache) {
+// SetResamplerCache sets the cache for storing resampled notes.
+func (s *Synth) SetResamplerCache(c cache.Cache) {
 	s.resCache = c
 }
 

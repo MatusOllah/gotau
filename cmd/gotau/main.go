@@ -77,7 +77,7 @@ func main() {
 	synth := gotau.New(44100, vb, res, nil)
 	synth.SetPhonemizer(&phonemizer.CV{PrefixMap: vb.PrefixMap})
 	cacheDir, _ := diskcache.Dir(gotau.ResamplerDiskCacheDir)
-	synth.SetResampleCache(diskcache.New(cacheDir, gotau.ResamplerDiskCacheExt))
+	synth.SetResamplerCache(diskcache.New(cacheDir, gotau.ResamplerDiskCacheExt))
 	synth.EnqueueSequence(seq)
 
 	outFile, err := os.Create(os.Args[3])
