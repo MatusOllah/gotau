@@ -2,7 +2,6 @@
 package atomicfile
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 )
@@ -50,9 +49,11 @@ func (f *File) Close() error {
 		_ = os.Remove(f.Name())
 		return err
 	}
-	if err := syncDir(f.dir); err != nil {
-		return fmt.Errorf("failed to sync directory: %w", err)
-	}
+	/*
+		if err := syncDir(f.dir); err != nil {
+			return fmt.Errorf("failed to sync directory: %w", err)
+		}
+	*/
 	f.done = true
 	return nil
 }
@@ -73,6 +74,7 @@ func (f *File) Abort() error {
 	return nil
 }
 
+/*
 func syncDir(dir string) error {
 	d, err := os.Open(dir)
 	if err != nil {
@@ -81,3 +83,4 @@ func syncDir(dir string) error {
 	defer d.Close()
 	return d.Sync()
 }
+*/
