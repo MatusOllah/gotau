@@ -11,6 +11,7 @@ import (
 func (s *Synth) getKeyFunc(cfg resample.ResampleConfig) cache.KeyFunc {
 	return func(w io.Writer) {
 		_, _ = w.Write([]byte("gotau-resample"))
+		_, _ = w.Write([]byte(s.res.ID()))
 		_ = binary.Write(w, binary.LittleEndian, uint64(s.vbFileBuf.Len()))
 		_, _ = w.Write(s.vbFileBuf.Bytes())
 		_, _ = w.Write([]byte{byte(cfg.Pitch)})

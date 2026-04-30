@@ -42,6 +42,10 @@ func New(name string, analysisExt string, sampleFmt afmt.SampleFormat) *Resample
 	return &Resampler{cmdName: name, sampleFmt: sampleFmt, analysisExt: analysisExt}
 }
 
+func (r *Resampler) ID() string {
+	return fmt.Sprintf("external:%s:%s", r.cmdName, r.analysisExt)
+}
+
 func (r *Resampler) Resample(in aio.SampleReader, cfg resample.ResampleConfig) (aio.SampleReader, error) {
 	input, err := r.createTempWav(in, cfg)
 	if err != nil {

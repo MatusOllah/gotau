@@ -14,6 +14,9 @@ type Resampler interface {
 	// Resample renders a note from the given input sample using the provided
 	// resampling configuration (pitch, velocity, oto settings, pitch bend, etc.).
 	Resample(in aio.SampleReader, cfg ResampleConfig) (aio.SampleReader, error)
+
+	// ID returns a unique identifier for this resampler. It is used for hashing and caching purposes.
+	ID() string
 }
 
 // Analyzer is the interface for resamplers that are capable of analysis
