@@ -158,13 +158,12 @@ func (f *File) parseNote(sec *ini.Section) (err error) {
 	}
 
 	// Velocity
-	note.Velocity = nil
+	note.Velocity = 0
 	if key, err := sec.GetKey("Velocity"); err == nil && key.String() != "" {
-		velocity, err := strconv.ParseFloat(key.String(), 64)
+		note.Velocity, err = strconv.ParseFloat(key.String(), 64)
 		if err != nil {
 			return fmt.Errorf("failed to parse velocity: %w", err)
 		}
-		note.Velocity = &velocity
 	}
 
 	// Modulation
@@ -198,13 +197,12 @@ func (f *File) parseNote(sec *ini.Section) (err error) {
 	}
 
 	// StartPoint
-	note.StartPoint = nil
+	note.StartPoint = 0
 	if key, err := sec.GetKey("StartPoint"); err == nil && key.String() != "" {
-		startPoint, err := strconv.ParseFloat(key.String(), 64)
+		note.StartPoint, err = strconv.ParseFloat(key.String(), 64)
 		if err != nil {
 			return fmt.Errorf("failed to parse start point: %w", err)
 		}
-		note.StartPoint = &startPoint
 	}
 
 	// Envelope

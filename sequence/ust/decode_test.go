@@ -39,11 +39,11 @@ func TestDecode(t *testing.T) {
 						Lyric:        "a",
 						NoteNum:      midi.Note(69),
 						Intensity:    100,
-						Velocity:     float64Ptr(100),
+						Velocity:     100,
 						Modulation:   0,
 						Preutterance: float64Ptr(42),
 						VoiceOverlap: float64Ptr(42),
-						StartPoint:   float64Ptr(42),
+						StartPoint:   42,
 						Envelope: &ust.Envelope{
 							P1: ust.EnvelopeValue{Value: 5},
 							P2: ust.EnvelopeValue{Value: 35},
@@ -110,7 +110,7 @@ func TestDecode(t *testing.T) {
 						Length:     720,
 						Lyric:      "a",
 						NoteNum:    midi.Note(69),
-						Velocity:   float64Ptr(100),
+						Velocity:   100,
 						Intensity:  100,
 						Modulation: 0,
 						PitchBend: &ust.PitchBend{
@@ -141,7 +141,7 @@ func TestDecode(t *testing.T) {
 						Length:     720,
 						Lyric:      "a",
 						NoteNum:    midi.Note(69),
-						Velocity:   float64Ptr(100),
+						Velocity:   100,
 						Intensity:  100,
 						Modulation: 0,
 						PitchBend: &ust.PitchBend{

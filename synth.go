@@ -218,7 +218,7 @@ func (s *Synth) renderNote(note sequence.Note) error {
 	newLength = math.Ceil((newLength+s.getStartPoint(note)+25)/50) * 5000
 	resampleCfg := resample.ResampleConfig{
 		Pitch:       note.Note,
-		Velocity:    s.getVelocity(note),
+		Velocity:    note.Velocity,
 		Flags:       note.Flags,
 		Offset:      otoEntry.Offset,
 		Length:      newLength,
@@ -340,18 +340,8 @@ func (s *Synth) getPreutter(otoEntry voicebank.OtoEntry, note sequence.Note) flo
 	return otoEntry.Preutterance
 }
 
-func (s *Synth) getVelocity(note sequence.Note) float64 {
-	if note.Velocity != nil {
-		return *note.Velocity
-	}
-	return 0
-}
-
 func (s *Synth) getStartPoint(note sequence.Note) float64 {
-	if note.StartPoint != nil {
-		return *note.StartPoint * math.Pow(2, 1-s.getVelocity(note)/100)
-	}
-	return 0
+	return note.StartPoint * math.Pow(2, 1-note.Velocity/100)
 }
 
 func (s *Synth) debugLog(msg string, note sequence.Note) {

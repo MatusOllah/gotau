@@ -54,7 +54,7 @@ type Note struct {
 	Intensity float64
 
 	// Velocity affects timing (smaller = more rushed; rarely used).
-	Velocity *float64
+	Velocity float64
 
 	// Modulation is the modulation depth, mostly used for vibrato.
 	Modulation float64
@@ -66,7 +66,7 @@ type Note struct {
 	VoiceOverlap *float64
 
 	// StartPoint is the time where to begin sampling inside the audio file (in milliseconds).
-	StartPoint *float64
+	StartPoint float64
 
 	// Envelope is the volume envelope curve. It should have at most 5 points.
 	Envelope Curve
