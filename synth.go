@@ -194,7 +194,7 @@ func (s *Synth) renderNote(note sequence.Note) error {
 	}
 	newLength := s.sched.ticksToSeconds(note.Duration) + preutterSec - enroachment
 
-	buf := make([]float32, int(newLength*float64(s.sr)))
+	noteBuf := make([]float32, int(newLength*float64(s.sr)))
 
 	f, err := s.vb.FS().Open(otoEntry.FilePath())
 	if err != nil {
@@ -233,6 +233,7 @@ func (s *Synth) renderNote(note sequence.Note) error {
 	}
 
 	var resampled aio.SampleReader
+	var doCache bool
 	key := s.getKeyFunc(resampleCfg)
 	ctx := context.Background()
 	if rc, err := s.resCache.Open(ctx, key); err == nil {
@@ -269,6 +270,14 @@ func (s *Synth) renderNote(note sequence.Note) error {
 			}
 		}
 
+		doCache = true
+	}
+
+	if _, err := resampled.ReadSamples(noteBuf); err != nil && err != io.EOF {
+		return fmt.Errorf("failed to read resampled audio: %w", err)
+	}
+
+	if doCache {
 		// cache the resampled audio
 		f, err := s.resCache.Create(ctx, key)
 		if err != nil {
@@ -287,7 +296,7 @@ func (s *Synth) renderNote(note sequence.Note) error {
 			return fmt.Errorf("failed to create wav encoder for caching: %w", err)
 		}
 
-		if _, err := aio.Copy(enc, resampled); err != nil {
+		if _, err := enc.WriteSamples(noteBuf); err != nil {
 			_ = f.Abort()
 			return fmt.Errorf("failed to cache resampled audio: %w", err)
 		}
@@ -303,11 +312,7 @@ func (s *Synth) renderNote(note sequence.Note) error {
 		}
 	}
 
-	if _, err := resampled.ReadSamples(buf); err != nil && err != io.EOF {
-		return fmt.Errorf("failed to read resampled audio: %w", err)
-	}
-
-	s.buf = append(s.buf, buf...)
+	s.buf = append(s.buf, noteBuf...)
 	s.sched.tickPos += note.Duration
 	s.prevLyric = note.Lyric
 	return nil
