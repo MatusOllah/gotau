@@ -3,6 +3,8 @@ package main
 import (
 	"encoding/binary"
 	"fmt"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/exec"
 	"time"
@@ -28,6 +30,12 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Usage: %s voicebank.zip song.ust output.wav", os.Args[0])
 		os.Exit(1)
 	}
+
+	go func() {
+		if err := http.ListenAndServe("localhost:6060", nil); err != nil {
+			panic(err)
+		}
+	}()
 
 	before := time.Now()
 
