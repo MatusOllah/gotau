@@ -3,10 +3,9 @@ package main
 import (
 	"encoding/binary"
 	"fmt"
-	"net/http"
-	_ "net/http/pprof"
 	"os"
 	"os/exec"
+	"runtime/pprof"
 	"time"
 
 	"github.com/SladkyCitron/enczip/zip"
@@ -31,10 +30,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	go func() {
-		if err := http.ListenAndServe("localhost:6060", nil); err != nil {
-			panic(err)
-		}
+	f, _ := os.Create("cpu.prof")
+	pprof.StartCPUProfile(f)
+	defer func() {
+		pprof.StopCPUProfile()
+		_ = f.Close()
 	}()
 
 	before := time.Now()
