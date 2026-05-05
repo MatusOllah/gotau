@@ -31,7 +31,7 @@ func main() {
 	}
 
 	f, _ := os.Create("cpu.prof")
-	pprof.StartCPUProfile(f)
+	_ = pprof.StartCPUProfile(f)
 	defer func() {
 		pprof.StopCPUProfile()
 		_ = f.Close()
