@@ -1,11 +1,11 @@
 package gotau
 
 import (
-	"bytes"
 	"context"
 	"encoding/binary"
 	"fmt"
 	"io"
+	"io/fs"
 	"log"
 	"math"
 	"path/filepath"
@@ -38,7 +38,6 @@ type Synth struct {
 	sched     *scheduler
 	sr        int
 	buf       []float32
-	vbFileBuf bytes.Buffer
 	prevLyric string
 	nextLyric string
 }
@@ -196,25 +195,6 @@ func (s *Synth) renderNote(note sequence.Note) error {
 
 	noteBuf := make([]float32, int(newLength*float64(s.sr)))
 
-	f, err := s.vb.FS().Open(otoEntry.FilePath())
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	s.vbFileBuf.Reset()
-	if _, err := io.Copy(&s.vbFileBuf, f); err != nil {
-		return err
-	}
-
-	deco, _, err := codec.Decode(bytes.NewReader(s.vbFileBuf.Bytes()))
-	if err != nil {
-		return err
-	}
-	if sr := int(deco.Format().SampleRate.Hertz()); sr != s.sr {
-		return fmt.Errorf("voicebank (%d Hz) and synth (%d Hz) sample rate do not match", sr, s.sr)
-	}
-
 	newLength = math.Ceil((newLength+s.getStartPoint(note)+25)/50) * 5000
 	resampleCfg := resample.ResampleConfig{
 		Pitch:       note.Note,
@@ -232,9 +212,14 @@ func (s *Synth) renderNote(note sequence.Note) error {
 		AudioFormat: afmt.Format{SampleRate: freq.Frequency(s.sr) * freq.Hertz, NumChannels: 1},
 	}
 
+	fileinfo, err := fs.Stat(s.vb.FS(), otoEntry.FilePath())
+	if err != nil {
+		return fmt.Errorf("failed to stat voicebank audio file: %w", err)
+	}
+
 	var resampled aio.SampleReader
 	var doCache bool
-	key := s.getKeyFunc(resampleCfg)
+	key := s.getKeyFunc(resampleCfg, otoEntry.FilePath(), fileinfo)
 	ctx := context.Background()
 	if rc, err := s.resCache.Open(ctx, key); err == nil {
 		resampled, err = wav.NewDecoder(rc)
@@ -242,6 +227,20 @@ func (s *Synth) renderNote(note sequence.Note) error {
 			return err
 		}
 	} else {
+		f, err := s.vb.FS().Open(otoEntry.FilePath())
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+
+		deco, _, err := codec.Decode(f)
+		if err != nil {
+			return err
+		}
+		if sr := int(deco.Format().SampleRate.Hertz()); sr != s.sr {
+			return fmt.Errorf("voicebank (%d Hz) and synth (%d Hz) sample rate do not match", sr, s.sr)
+		}
+
 		if analyzer, ok := s.res.(resample.Analyzer); ok {
 			// check if there's the analysis sidecar file available
 			ext := filepath.Ext(otoEntry.FilePath())
