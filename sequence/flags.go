@@ -13,6 +13,7 @@ import (
 	"unicode/utf8"
 )
 
+// OptionFlagValue is a special value used to indicate that an option flag is set.
 const OptionFlagValue = math.MaxInt64
 
 // we don't need helper methods like Get, Set, etc. because it's just a map
