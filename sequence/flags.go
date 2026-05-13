@@ -105,7 +105,7 @@ func (f Flags) MarshalBinary() ([]byte, error) {
 // ParseFlags parses a UTAU resampler flag string into a [Flags] map.
 func ParseFlags(s string) (Flags, error) {
 	flags := make(Flags)
-	if s == "" {
+	if s == "" || s == "?" {
 		return flags, nil
 	}
 	var keyBuf bytes.Buffer
