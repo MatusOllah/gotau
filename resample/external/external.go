@@ -225,7 +225,7 @@ func (r *Resampler) createTempWav(in aio.SampleReader, cfg resample.ResampleConf
 	_, _ = h.Write([]byte{byte(cfg.Pitch)})
 	_ = binary.Write(h, binary.LittleEndian, cfg.Velocity)
 	flags, _ := cfg.Flags.MarshalBinary()
-	h.Write(flags)
+	_, _ = h.Write(flags)
 	_ = binary.Write(h, binary.LittleEndian, cfg.Offset)
 	_ = binary.Write(h, binary.LittleEndian, cfg.Length)
 	_ = binary.Write(h, binary.LittleEndian, cfg.Consonant)
