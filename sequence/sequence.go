@@ -74,14 +74,14 @@ type Note struct {
 	// PitchBend is the pitch bend curve. It is a curve that maps time (in MIDI ticks) to pitch (in semitones).
 	PitchBend Curve
 
-	// Flags is a string of flags for passing to the resampler. These can be resampler-specific.
-	Flags string
+	// Flags are the flags for passing to the resampler. These can be resampler-specific.
+	Flags Flags
 }
 
 // Sequencer is the interface for something that can produce a [Sequence].
 type Sequencer interface {
-	// Sequence returns the [Sequence].
-	Sequence() Sequence
+	// Sequence produces a [Sequence].
+	Sequence() (Sequence, error)
 }
 
 // Len returns the sequence's length in MIDI ticks.

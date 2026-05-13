@@ -8,7 +8,6 @@ import (
 	"runtime/pprof"
 	"time"
 
-	"github.com/SladkyCitron/enczip/zip"
 	"github.com/SladkyCitron/gotau"
 	"github.com/SladkyCitron/resona/afmt"
 	"github.com/SladkyCitron/resona/aio"
@@ -20,7 +19,6 @@ import (
 	"github.com/SladkyCitron/gotau/resample/external"
 	"github.com/SladkyCitron/gotau/sequence/ust"
 	"github.com/SladkyCitron/gotau/voicebank"
-	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/japanese"
 )
 
@@ -41,15 +39,18 @@ func main() {
 
 	println("loading voicebank")
 
-	zr, err := zip.OpenReader(os.Args[1], encoding.Nop)
-	if err != nil {
-		panic(err)
-	}
-	defer func() {
-		if err := zr.Close(); err != nil {
+	/*
+		zr, err := zip.OpenReader(os.Args[1], encoding.Nop)
+		if err != nil {
 			panic(err)
 		}
-	}()
+		defer func() {
+			if err := zr.Close(); err != nil {
+				panic(err)
+			}
+		}()
+	*/
+	zr := os.DirFS(os.Args[1])
 
 	vb, err := voicebank.Open(zr, voicebank.WithFileEncoding(japanese.ShiftJIS), voicebank.WithDecodeAssets(true))
 	if err != nil {
@@ -74,7 +75,10 @@ func main() {
 	}
 
 	println("compiling UST")
-	seq := ustFile.Sequence()
+	seq, err := ustFile.Sequence()
+	if err != nil {
+		panic(err)
+	}
 
 	println("loading synth")
 	res := external.New(`C:\Users\matus\Documents\Go\gotau\straycat-rs.exe`, ".sc", afmt.SampleFormat{16, afmt.SampleEncodingInt, binary.LittleEndian})

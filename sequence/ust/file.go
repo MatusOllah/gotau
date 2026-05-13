@@ -1,9 +1,13 @@
 package ust
 
 import (
+	"fmt"
+
 	"github.com/SladkyCitron/gotau/sequence"
 	"gopkg.in/ini.v1"
 )
+
+var _ sequence.Sequencer = (*File)(nil)
 
 // File represents a parsed UST file.
 type File struct {
@@ -14,7 +18,7 @@ type File struct {
 	iniFile *ini.File // iniFile holds the raw parsed INI file structure (used internally).
 }
 
-func (f *File) Sequence() sequence.Sequence {
+func (f *File) Sequence() (sequence.Sequence, error) {
 	seq := sequence.Sequence{
 		Metadata: sequence.Metadata{
 			Name:          f.Settings.ProjectName,
@@ -26,13 +30,18 @@ func (f *File) Sequence() sequence.Sequence {
 	}
 
 	var position int
-	for _, note := range f.Notes {
+	for i, note := range f.Notes {
 		if IsLyricRest(note.Lyric) {
 			position += note.Length
 			continue
 		}
 
 		msPerTick := 60000 / (f.Settings.Tempo * float64(seq.Metadata.Resolution))
+
+		flags, err := sequence.ParseFlags(note.Flags)
+		if err != nil {
+			return sequence.Sequence{}, fmt.Errorf("ust Sequence: failed to parse flags for note #%04d: %w", i+1, err)
+		}
 
 		seq.Notes = append(seq.Notes, sequence.Note{
 			Position:     position,
@@ -47,10 +56,11 @@ func (f *File) Sequence() sequence.Sequence {
 			StartPoint:   note.StartPoint,
 			Envelope:     envelopeToCurve(note.Envelope, msPerTick*float64(note.Length)),
 			PitchBend:    pitchBendToCurve(note.PitchBend),
+			Flags:        flags,
 		})
 		position += note.Length
 	}
-	return seq
+	return seq, nil
 }
 
 func envelopeToCurve(env *Envelope, noteDurMs float64) sequence.Curve {

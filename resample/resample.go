@@ -48,7 +48,7 @@ type ResampleConfig struct {
 	Velocity float64
 
 	// Flags is a string of flags to pass to the resampler. These can be resampler-specific.
-	Flags string
+	Flags sequence.Flags
 
 	// Offset is the offset time in milliseconds (from oto).
 	Offset float64

@@ -55,8 +55,8 @@ func (r *Resampler) Resample(in aio.SampleReader, cfg resample.ResampleConfig) (
 	output := input[:len(input)-len(filepath.Ext(input))] + "-out.wav"
 
 	flags := "?"
-	if cfg.Flags != "" {
-		flags = cfg.Flags
+	if len(cfg.Flags) > 0 {
+		flags = cfg.Flags.String()
 	}
 
 	cmd := exec.Command(
@@ -112,8 +112,8 @@ func (r *Resampler) ResampleWithAnalysis(in aio.SampleReader, analysis io.Reader
 	output := input[:len(input)-len(filepath.Ext(input))] + "-out.wav"
 
 	flags := "?"
-	if cfg.Flags != "" {
-		flags = cfg.Flags
+	if len(cfg.Flags) > 0 {
+		flags = cfg.Flags.String()
 	}
 
 	cmd := exec.Command(
@@ -224,7 +224,8 @@ func (r *Resampler) createTempWav(in aio.SampleReader, cfg resample.ResampleConf
 	_, _ = h.WriteString(r.cmdName)
 	_, _ = h.Write([]byte{byte(cfg.Pitch)})
 	_ = binary.Write(h, binary.LittleEndian, cfg.Velocity)
-	_, _ = h.WriteString(cfg.Flags)
+	flags, _ := cfg.Flags.MarshalBinary()
+	h.Write(flags)
 	_ = binary.Write(h, binary.LittleEndian, cfg.Offset)
 	_ = binary.Write(h, binary.LittleEndian, cfg.Length)
 	_ = binary.Write(h, binary.LittleEndian, cfg.Consonant)
