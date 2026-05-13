@@ -17,6 +17,11 @@ func (s *Synth) getKeyFunc(cfg resample.ResampleConfig, path string, fileinfo fs
 		mtime = []byte{}
 	}
 
+	flags, err := cfg.Flags.MarshalBinary()
+	if err != nil {
+		flags = []byte{}
+	}
+
 	return func(w io.Writer) {
 		_, _ = w.Write([]byte("gotau-resample"))
 		_ = binary.Write(w, binary.LittleEndian, keyVersion)
@@ -26,7 +31,7 @@ func (s *Synth) getKeyFunc(cfg resample.ResampleConfig, path string, fileinfo fs
 		_, _ = w.Write(mtime)
 		_, _ = w.Write([]byte{byte(cfg.Pitch)})
 		_ = binary.Write(w, binary.LittleEndian, cfg.Velocity)
-		_, _ = w.Write([]byte(cfg.Flags))
+		_, _ = w.Write(flags)
 		_ = binary.Write(w, binary.LittleEndian, cfg.Offset)
 		_ = binary.Write(w, binary.LittleEndian, cfg.Length)
 		_ = binary.Write(w, binary.LittleEndian, cfg.Consonant)
