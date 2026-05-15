@@ -21,13 +21,13 @@ func (s *scheduler) enqueue(notes ...sequence.Note) {
 	s.ensureQueueSorted()
 }
 
-var sortFn = func(a, b sequence.Note) int { return cmp.Compare(a.Position, b.Position) }
+var cmpFn = func(a, b sequence.Note) int { return cmp.Compare(a.Position, b.Position) }
 
 func (s *scheduler) ensureQueueSorted() {
-	if slices.IsSortedFunc(s.queue, sortFn) {
+	if slices.IsSortedFunc(s.queue, cmpFn) {
 		return
 	}
-	slices.SortFunc(s.queue, sortFn)
+	slices.SortFunc(s.queue, cmpFn)
 }
 
 // popSeq returns and dequeues all notes that are ready to be rendered up to seconds.
