@@ -1,6 +1,10 @@
 package sequence
 
-import "math"
+import (
+	"cmp"
+	"math"
+	"slices"
+)
 
 // CurveInterpolation is the type of interpolation used between curve points.
 type CurveInterpolation uint8
@@ -13,6 +17,7 @@ const (
 )
 
 // Curve represents a curve. It consists of a list of curve points and the interpolation type between them.
+// The curve points must be sorted by [CurvePoint.X] in ascending order and must not have duplicate X values.
 type Curve []CurvePoint
 
 // CurvePoint represents a single point on a curve.
@@ -27,6 +32,8 @@ type CurvePoint struct {
 	Interp CurveInterpolation
 }
 
+var cmpFn = func(a, b CurvePoint) int { return cmp.Compare(a.X, b.X) }
+
 // At calculates and returns the value at the tick.
 func (c Curve) At(tick int) float64 {
 	if len(c) == 0 || tick < c[0].X || tick > c[len(c)-1].X {
@@ -34,28 +41,18 @@ func (c Curve) At(tick int) float64 {
 	}
 
 	// exact match shortcut
-	for _, pt := range c {
-		if pt.X == tick {
-			return pt.Y
-		}
+	i, ok := slices.BinarySearchFunc(c, CurvePoint{X: tick}, cmpFn)
+	if ok {
+		return c[i].Y
 	}
 
 	// find start and end points that tick sits in between
-	var start, end CurvePoint
-	var found bool
-	for i := 0; i < len(c)-1; i++ {
-		a := c[i]
-		b := c[i+1]
-		if tick >= a.X && tick <= b.X {
-			start = a
-			end = b
-			found = true
-			break
-		}
-	}
-	if !found {
+	i, _ = slices.BinarySearchFunc(c, CurvePoint{X: tick}, cmpFn)
+	if i == 0 || i >= len(c) {
 		return math.NaN()
 	}
+	start := c[i-1]
+	end := c[i]
 
 	dx := end.X - start.X
 	if dx <= 0 {
