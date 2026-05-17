@@ -54,32 +54,8 @@ func (r *Resampler) Resample(in aio.SampleReader, cfg resample.ResampleConfig) (
 
 	output := input[:len(input)-len(filepath.Ext(input))] + "-out.wav"
 
-	flags := "?"
-	if len(cfg.Flags) > 0 {
-		flags = cfg.Flags.String()
-	}
-
-	cmd := exec.Command(
-		r.cmdName,
-		input,
-		output,
-		strconv.FormatInt(int64(cfg.Pitch), 10),
-		strconv.FormatInt(int64(cfg.Velocity*100), 10),
-		flags,
-		strconv.FormatFloat(cfg.Offset, 'f', -1, 64),
-		strconv.FormatFloat(cfg.Length, 'f', -1, 64),
-		strconv.FormatFloat(cfg.Consonant, 'f', -1, 64),
-		strconv.FormatFloat(cfg.Cutoff, 'f', -1, 64),
-		strconv.FormatInt(int64(cfg.Intensity*100), 10),
-		strconv.FormatInt(int64(cfg.Modulation*100), 10),
-		"!"+strconv.FormatFloat(cfg.Tempo, 'f', -1, 64), // apparently the tempo starts with "!" and not "T"???
-		pitch.EncodeResamplerPitchBendString(cfg.PitchBend, cfg.Pitch, cfg.Length, cfg.Tempo, cfg.Resolution),
-	)
-	if r.ConfigureCmd != nil {
-		r.ConfigureCmd(cmd)
-	}
-	if err := cmd.Run(); err != nil {
-		return nil, fmt.Errorf("external: failed to run resampler command: %w", err)
+	if err := r.runCmd(input, output, cfg); err != nil {
+		return nil, err
 	}
 
 	if err := os.Remove(input); err != nil {
@@ -111,32 +87,8 @@ func (r *Resampler) ResampleWithAnalysis(in aio.SampleReader, analysis io.Reader
 
 	output := input[:len(input)-len(filepath.Ext(input))] + "-out.wav"
 
-	flags := "?"
-	if len(cfg.Flags) > 0 {
-		flags = cfg.Flags.String()
-	}
-
-	cmd := exec.Command(
-		r.cmdName,
-		input,
-		output,
-		strconv.FormatInt(int64(cfg.Pitch), 10),
-		strconv.FormatInt(int64(cfg.Velocity*100), 10),
-		flags,
-		strconv.FormatFloat(cfg.Offset, 'f', -1, 64),
-		strconv.FormatFloat(cfg.Length, 'f', -1, 64),
-		strconv.FormatFloat(cfg.Consonant, 'f', -1, 64),
-		strconv.FormatFloat(cfg.Cutoff, 'f', -1, 64),
-		strconv.FormatInt(int64(cfg.Intensity*100), 10),
-		strconv.FormatInt(int64(cfg.Modulation*100), 10),
-		"!"+strconv.FormatFloat(cfg.Tempo, 'f', -1, 64),
-		pitch.EncodeResamplerPitchBendString(cfg.PitchBend, cfg.Pitch, cfg.Length, cfg.Tempo, cfg.Resolution),
-	)
-	if r.ConfigureCmd != nil {
-		r.ConfigureCmd(cmd)
-	}
-	if err := cmd.Run(); err != nil {
-		return nil, fmt.Errorf("external: failed to run resampler command: %w", err)
+	if err := r.runCmd(input, output, cfg); err != nil {
+		return nil, err
 	}
 
 	if err := os.Remove(input); err != nil {
@@ -216,6 +168,38 @@ func (r *Resampler) Analyze(in aio.SampleReader, format afmt.Format) (io.ReadClo
 
 func (r *Resampler) AnalysisExt() string {
 	return r.analysisExt
+}
+
+func (r *Resampler) runCmd(input, output string, cfg resample.ResampleConfig) error {
+	flags := "?"
+	if len(cfg.Flags) > 0 {
+		flags = cfg.Flags.String()
+	}
+
+	cmd := exec.Command(
+		r.cmdName,
+		input,
+		output,
+		strconv.FormatInt(int64(cfg.Pitch), 10),
+		strconv.FormatInt(int64(cfg.Velocity*100), 10),
+		flags,
+		strconv.FormatFloat(cfg.Offset, 'f', -1, 64),
+		strconv.FormatFloat(cfg.Length, 'f', -1, 64),
+		strconv.FormatFloat(cfg.Consonant, 'f', -1, 64),
+		strconv.FormatFloat(cfg.Cutoff, 'f', -1, 64),
+		strconv.FormatInt(int64(cfg.Intensity*100), 10),
+		strconv.FormatInt(int64(cfg.Modulation*100), 10),
+		"!"+strconv.FormatFloat(cfg.Tempo, 'f', -1, 64), // apparently the tempo starts with "!" and not "T"???
+		pitch.EncodeResamplerPitchBendString(cfg.PitchBend, cfg.Pitch, cfg.Length, cfg.Tempo, cfg.Resolution),
+	)
+	if r.ConfigureCmd != nil {
+		r.ConfigureCmd(cmd)
+	}
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("external: failed to run resampler command: %w", err)
+	}
+
+	return nil
 }
 
 func (r *Resampler) createTempWav(in aio.SampleReader, cfg resample.ResampleConfig) (string, error) {
