@@ -11,16 +11,14 @@ import (
 
 func TestCV(t *testing.T) {
 	p := &phonemizer.CV{PrefixMap: voicebank.PrefixMap{60: voicebank.Prefix{"pre", "suf"}}}
-	got := slices.Collect(p.Resolve(phonemizer.ResolveConfig{
-		Lyric: " a ",
-		Note:  60,
-	}))
+	got := slices.Collect(p.Phonemize([]phonemizer.Note{{Lyric: " a ", Note: 60}}, nil, nil))
 
-	want := []string{
+	want := []phonemizer.Phoneme{{Index: 0, Candidates: []string{
+		"preasuf",   // prefix.map trimmed
 		"pre a suf", // prefix.map
 		"a",         // trimmed
 		" a ",       // raw
-	}
+	}}}
 
 	assert.Equal(t, want, got)
 }

@@ -2,6 +2,7 @@ package phonemizer
 
 import (
 	"iter"
+	"slices"
 	"strings"
 
 	"github.com/SladkyCitron/gotau/voicebank"
@@ -10,35 +11,31 @@ import (
 var _ Phonemizer = (*CV)(nil)
 
 // CV is a simple consonant+vowel (CV) [Phonemizer].
-//
-// It emits candidates based on the following order:
-//
-//  1. prefix.map combo (if [CV.PrefixMap] is present)
-//  2. whitespace-trimmed lyric
-//  3. raw lyric
 type CV struct {
 	// PrefixMap contains the prefix.map rules for note-based prefix / suffix lookup.
 	// Optional.
 	PrefixMap voicebank.PrefixMap
 }
 
-// Resolve satisfies the [Phonemizer] interface.
-func (p *CV) Resolve(cfg ResolveConfig) iter.Seq[string] {
-	return func(yield func(string) bool) {
+// Phonemize satisfies the [Phonemizer] interface.
+func (p *CV) Phonemize(notes []Note, _ *Note, _ *Note) iter.Seq[Phoneme] {
+	return func(yield func(Phoneme) bool) {
+		combos := make([]string, 0, 4)
+
 		// prefix.map
-		if entry, ok := p.PrefixMap[cfg.Note]; ok {
-			if !yield(entry.Prefix + cfg.Lyric + entry.Suffix) {
-				return
+		if p.PrefixMap != nil {
+			if entry, ok := p.PrefixMap[notes[0].Note]; ok {
+				combos = append(combos, entry.Prefix+strings.TrimSpace(notes[0].Lyric)+entry.Suffix)
+				combos = append(combos, entry.Prefix+notes[0].Lyric+entry.Suffix)
 			}
 		}
 
 		// trimmed lyric
-		if !yield(strings.TrimSpace(cfg.Lyric)) {
-			return
-		}
+		combos = append(combos, strings.TrimSpace(notes[0].Lyric))
 
 		// raw lyric
-		// no need to check yield result; this is the final candidate
-		yield(cfg.Lyric)
+		combos = append(combos, notes[0].Lyric)
+
+		yield(Phoneme{Index: 0, Candidates: slices.Compact(combos)})
 	}
 }

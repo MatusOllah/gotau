@@ -8,54 +8,48 @@ import (
 	"gitlab.com/gomidi/midi/v2"
 )
 
-//TODO: CVVC / VCCV, presamp.ini, maybe also a custom lyric resolve text/template thingie
+// Note represents a note that is used as input for the phonemizer.
+type Note struct {
+	// Position is the position of the note in MIDI ticks.
+	Position int
 
-// Phonemizer is the interface that is implemented by phonemizers and wraps the basic Resolve method.
-// It resolves a lyric into phoneme alias candidates and returns an iterator over them.
-//
-// Phonemizer encapsulates the logic and rules for converting a lyric into a sequence
-// of candidate phoneme aliases suitable for oto lookup and final voice synthesis.
-// This allows different voicebanks support various phonemization schemes (e.g. CV, VCV)
-// and the synthesis engine to use any phonemization scheme that is supported by the voicebank.
-type Phonemizer interface {
-	Resolve(cfg ResolveConfig) iter.Seq[string]
-}
+	// Duration is the duration of the note in MIDI ticks.
+	Duration int
 
-// ResolveConfig represents the configuration for passing into [Phonemizer.Resolve].
-type ResolveConfig struct {
-	// PrevLyric is the previous lyric.
-	PrevLyric string
-
-	// Lyric is the current lyric.
+	// Lyric is the lyric of the note. It can be either latin characters or kana.
 	Lyric string
 
-	// NextLyric is the next lyric.
-	NextLyric string
-
-	// Note is the MIDI note. It's used for prefix.map lookup.
+	// Note is the MIDI note number.
 	Note midi.Note
 }
 
-// MultiPhonemizer returns a [Phonemizer] that's the logical concatenation
-// of the provided input phonemizers. They're called sequentially.
-func MultiPhonemizer(phonemizers ...Phonemizer) Phonemizer {
-	p := make([]Phonemizer, len(phonemizers))
-	copy(p, phonemizers)
-	return &multiPhonemizer{phones: p}
+// Phoneme represents a phoneme.
+type Phoneme struct {
+	// Index is the index of the note this phoneme points to.
+	Index int
+
+	// Candidates is a list of candidate oto aliases for this phoneme. The first candidate should be the most likely one.
+	Candidates []string
 }
 
-type multiPhonemizer struct {
-	phones []Phonemizer
-}
-
-func (mp *multiPhonemizer) Resolve(cfg ResolveConfig) iter.Seq[string] {
-	return func(yield func(string) bool) {
-		for _, p := range mp.phones {
-			for alias := range p.Resolve(cfg) {
-				if !yield(alias) {
-					return
-				}
-			}
-		}
-	}
+// Phonemizer is the interface that is implemented by phonemizers and wraps the basic Phonemize method.
+// It resolves a list of input slur notes and their context (previous and next note) into phonemes
+// with oto alias candidates and returns an lazy iterator over them evaluated in order.
+//
+// Phonemizer encapsulates the logic and rules for converting a lyric into a sequence
+// of phonemes suitable for oto lookup and final synthesis.
+// This allows different voicebanks and spoken languages support various
+// phonemization schemes (e.g. CV, VCV) and the synthesis engine to use
+// any phonemization scheme that is supported by the voicebank or language.
+//
+// # Input notes and context
+//
+// The input notes are a slice of notes that are slurred (tied) together and should be phonemized together as one unit.
+// The first note in the slice is the main note that determines the lyric and pitch, while the rest are extended
+// slur notes (i.e. "+") that only contribute to the phonemization of the main note.
+//
+// The previous and next note are adjacent notes to the main note and are used for context-aware phonemization (e.g. VCV, CVVC).
+// They can be nil if there is no previous or next note.
+type Phonemizer interface {
+	Phonemize(notes []Note, prev *Note, next *Note) iter.Seq[Phoneme]
 }

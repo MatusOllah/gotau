@@ -12,8 +12,8 @@ func TestDefault(t *testing.T) {
 	want := "a"
 
 	p := &phonemizer.Default{}
-	got := slices.Collect(p.Resolve(phonemizer.ResolveConfig{Lyric: want}))
+	got := slices.Collect(p.Phonemize([]phonemizer.Note{{Lyric: want}}, nil, nil))
 
-	wantSlice := []string{want}
+	wantSlice := []phonemizer.Phoneme{{Index: 0, Candidates: []string{want}}}
 	assert.Equal(t, wantSlice, got)
 }

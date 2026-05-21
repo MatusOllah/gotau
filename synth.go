@@ -9,6 +9,7 @@ import (
 	"log"
 	"math"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/SladkyCitron/gotau/cache"
@@ -30,16 +31,15 @@ const startBufSize = 4096 // Size of initial allocation for buffer
 
 // Synth is the main singing voice synthsizer that renders notes into audio samples.
 type Synth struct {
-	vb        *voicebank.Voicebank
-	ph        phonemizer.Phonemizer
-	res       resample.Resampler
-	cat       concat.Concatenator
-	resCache  cache.Cache
-	sched     *scheduler
-	sr        int
-	buf       []float32
-	prevLyric string
-	nextLyric string
+	vb       *voicebank.Voicebank
+	ph       phonemizer.Phonemizer
+	res      resample.Resampler
+	cat      concat.Concatenator
+	resCache cache.Cache
+	sched    *scheduler
+	sr       int
+	buf      []float32
+	prevNote *sequence.Note
 }
 
 // New creates a new [Synth] with the given sample rate, voicebank, resampler, and concatenator.
@@ -126,12 +126,23 @@ func (s *Synth) ReadSamples(p []float32) (int, error) {
 
 		seconds := float64(len(p)-n) / float64(s.sr)
 		for note := range s.sched.popSeq(seconds) {
-			if err := s.renderNote(note); err != nil {
+			var prev *sequence.Note
+			if s.prevNote != nil {
+				prev = s.prevNote
+			}
+
+			var next *sequence.Note
+			if peek, ok := s.sched.peek(); ok {
+				next = &peek
+			}
+
+			if err := s.renderNotes(note, prev, next); err != nil {
 				copied := copy(p[n:], s.buf)
 				s.buf = s.buf[copied:]
 				n += copied
 				return n, fmt.Errorf("gotau Synth: failed to render note %q: %w", note.Lyric, err)
 			}
+			s.prevNote = &note
 		}
 
 		copied := copy(p[n:], s.buf)
@@ -141,30 +152,75 @@ func (s *Synth) ReadSamples(p []float32) (int, error) {
 	return n, nil
 }
 
-func (s *Synth) renderNote(note sequence.Note) error {
-	// get next lyric
-	if next, ok := s.sched.peek(); ok {
-		s.nextLyric = next.Lyric
-	} else {
-		s.nextLyric = ""
-	}
+func (s *Synth) renderNotes(note sequence.Note, prev *sequence.Note, next *sequence.Note) error {
+	s.debugLog("note", note)
 
-	// get oto
-	otoEntry, otoOk := s.getOtoEntry(note)
+	notes := []sequence.Note{note}
 
-	// get preutterance of current and next note
-	preutter := s.getPreutter(otoEntry, note)
-	preutterSec := preutter / 1000
-	var nextPreutter float64
-	if next, ok := s.sched.peek(); ok {
-		if next.Preutterance != nil {
-			nextPreutter = *next.Preutterance
-		}
-		if nextOtoEntry, ok := s.getOtoEntry(next); ok {
-			nextPreutter = s.getPreutter(nextOtoEntry, next)
+	phNotes := make([]phonemizer.Note, len(notes))
+	for i := range notes {
+		phNotes[i] = phonemizer.Note{
+			Position: notes[i].Position,
+			Duration: notes[i].Duration,
+			Lyric:    notes[i].Lyric,
+			Note:     notes[i].Note,
 		}
 	}
-	nextPreutterSec := nextPreutter / 1000
+
+	var phPrev *phonemizer.Note
+	if prev != nil {
+		phPrev = &phonemizer.Note{
+			Position: prev.Position,
+			Duration: prev.Duration,
+			Lyric:    prev.Lyric,
+			Note:     prev.Note,
+		}
+	}
+
+	var phNext *phonemizer.Note
+	if next != nil {
+		phNext = &phonemizer.Note{
+			Position: next.Position,
+			Duration: next.Duration,
+			Lyric:    next.Lyric,
+			Note:     next.Note,
+		}
+	}
+
+	for ph := range s.ph.Phonemize(phNotes, phPrev, phNext) {
+		targetNote := phNotes[ph.Index]
+
+		otoEntry, ok := s.resolvePhoneme(ph)
+
+		// get preutterance of next note
+		var nextPreutterSec float64
+		if next != nil {
+			nextPhonemes := slices.Collect(s.ph.Phonemize([]phonemizer.Note{*phNext}, &targetNote, nil))
+			if len(nextPhonemes) > 0 {
+				if nextOtoEntry, ok := s.resolvePhoneme(nextPhonemes[0]); ok {
+					nextPreutterSec = s.getPreutter(nextOtoEntry, *next) / 1000
+				}
+			}
+		}
+
+		if !ok {
+			s.debugLog("fallback silence", note)
+			buf := make([]float32, int((s.sched.ticksToSeconds(note.Duration)-nextPreutterSec)*float64(s.sr)))
+			s.buf = append(s.buf, buf...)
+			s.sched.tickPos += note.Duration
+			return nil
+		}
+
+		if err := s.renderSingleNote(notes[ph.Index], otoEntry, nextPreutterSec); err != nil {
+			return fmt.Errorf("failed to render phoneme %q: %w", otoEntry.Alias, err)
+		}
+	}
+	return nil
+}
+
+func (s *Synth) renderSingleNote(note sequence.Note, otoEntry voicebank.OtoEntry, nextPreutterSec float64) error {
+	// get preutterance of current note
+	preutterSec := s.getPreutter(otoEntry, note) / 1000
 
 	// emit possible silence before note
 	if startTick := note.Position - s.sched.secondsToTicks(preutterSec); startTick > s.sched.tickPos {
@@ -172,18 +228,6 @@ func (s *Synth) renderNote(note sequence.Note) error {
 		buf := make([]float32, int((s.sched.ticksToSeconds(note.Position-s.sched.tickPos)-preutterSec)*float64(s.sr)))
 		s.buf = append(s.buf, buf...)
 		s.sched.tickPos = startTick
-	}
-
-	s.debugLog("note", note)
-
-	// oto entry not found; emit silence instead
-	if !otoOk {
-		s.debugLog("fallback silence", note)
-		buf := make([]float32, int((s.sched.ticksToSeconds(note.Duration)-nextPreutterSec)*float64(s.sr)))
-		s.buf = append(s.buf, buf...)
-		s.sched.tickPos += note.Duration
-		s.prevLyric = note.Lyric
-		return nil
 	}
 
 	// adjust actual note duration and timing
@@ -313,19 +357,12 @@ func (s *Synth) renderNote(note sequence.Note) error {
 
 	s.buf = append(s.buf, noteBuf...)
 	s.sched.tickPos += note.Duration
-	s.prevLyric = note.Lyric
 	return nil
 }
 
-func (s *Synth) getOtoEntry(note sequence.Note) (e voicebank.OtoEntry, ok bool) {
-	resolveCfg := phonemizer.ResolveConfig{
-		PrevLyric: s.prevLyric,
-		Lyric:     note.Lyric,
-		Note:      note.Note,
-	}
-	for alias := range s.ph.Resolve(resolveCfg) {
-		e, ok = s.vb.Oto.Get(alias)
-		if ok {
+func (s *Synth) resolvePhoneme(ph phonemizer.Phoneme) (e voicebank.OtoEntry, ok bool) {
+	for _, alias := range ph.Candidates {
+		if e, ok = s.vb.Oto.Get(alias); ok {
 			return e, true
 		}
 	}
