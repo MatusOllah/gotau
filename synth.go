@@ -187,21 +187,33 @@ func (s *Synth) renderNotes(note sequence.Note, prev *sequence.Note, next *seque
 		}
 	}
 
+	// get preutterance of next note
+	var nextPreutterSec float64
+	if next != nil {
+		nextPhonemes := slices.Collect(s.ph.Phonemize([]phonemizer.Note{*phNext}, &phNotes[0], nil))
+		if len(nextPhonemes) > 0 {
+			var nextPrefix voicebank.Prefix
+			if s.vb.PrefixMap != nil {
+				if entry, ok := s.vb.PrefixMap[phNext.Note]; ok {
+					nextPrefix = entry
+				}
+			}
+			if nextOtoEntry, ok := s.resolvePhoneme(nextPhonemes[0], nextPrefix); ok {
+				nextPreutterSec = s.getPreutter(nextOtoEntry, *next) / 1000
+			}
+		}
+	}
+
 	for ph := range s.ph.Phonemize(phNotes, phPrev, phNext) {
 		targetNote := phNotes[ph.Index]
 
-		otoEntry, ok := s.resolvePhoneme(ph)
-
-		// get preutterance of next note
-		var nextPreutterSec float64
-		if next != nil {
-			nextPhonemes := slices.Collect(s.ph.Phonemize([]phonemizer.Note{*phNext}, &targetNote, nil))
-			if len(nextPhonemes) > 0 {
-				if nextOtoEntry, ok := s.resolvePhoneme(nextPhonemes[0]); ok {
-					nextPreutterSec = s.getPreutter(nextOtoEntry, *next) / 1000
-				}
+		var prefix voicebank.Prefix
+		if s.vb.PrefixMap != nil {
+			if entry, ok := s.vb.PrefixMap[targetNote.Note]; ok {
+				prefix = entry
 			}
 		}
+		otoEntry, ok := s.resolvePhoneme(ph, prefix)
 
 		if !ok {
 			s.debugLog("fallback silence", note)
@@ -360,9 +372,9 @@ func (s *Synth) renderSingleNote(note sequence.Note, otoEntry voicebank.OtoEntry
 	return nil
 }
 
-func (s *Synth) resolvePhoneme(ph phonemizer.Phoneme) (e voicebank.OtoEntry, ok bool) {
+func (s *Synth) resolvePhoneme(ph phonemizer.Phoneme, prefix voicebank.Prefix) (e voicebank.OtoEntry, ok bool) {
 	for _, alias := range ph.Candidates {
-		if e, ok = s.vb.Oto.Get(alias); ok {
+		if e, ok = s.vb.Oto.Get(prefix.Prefix + alias + prefix.Suffix); ok {
 			return e, true
 		}
 	}
