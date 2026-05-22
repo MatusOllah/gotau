@@ -30,6 +30,9 @@ type Phoneme struct {
 
 	// Candidates is a list of candidate oto aliases for this phoneme. The first candidate should be the most likely one.
 	Candidates []string
+
+	// Error is an error that occurred during phonemization.
+	Error error
 }
 
 // Phonemizer is the interface that is implemented by phonemizers and wraps the basic Phonemize method.

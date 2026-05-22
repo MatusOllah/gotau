@@ -373,6 +373,11 @@ func (s *Synth) renderSingleNote(note sequence.Note, otoEntry voicebank.OtoEntry
 }
 
 func (s *Synth) resolvePhoneme(ph phonemizer.Phoneme, prefix voicebank.Prefix) (e voicebank.OtoEntry, ok bool) {
+	if ph.Error != nil {
+		// log error??
+		return voicebank.OtoEntry{}, false
+	}
+
 	for _, alias := range ph.Candidates {
 		if e, ok = s.vb.Oto.Get(prefix.Prefix + alias + prefix.Suffix); ok {
 			return e, true
