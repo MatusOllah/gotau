@@ -35,8 +35,10 @@ func (p *JapaneseVCV) Phonemize(notes []Note, prev *Note, _ *Note) iter.Seq[Phon
 			prevLyric := norm.NFC.String(prev.Lyric)
 			vowel := kanaTailVowel(prevLyric)
 			combos = combos[:0]
+			if vowel != 0x00 {
+				combos = append(combos, string(vowel)+" "+lyric)
+			}
 			combos = append(combos,
-				string(vowel)+" "+lyric,
 				"* "+lyric,
 				lyric,
 				"- "+lyric,
