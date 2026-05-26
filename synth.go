@@ -125,7 +125,34 @@ func (s *Synth) ReadSamples(p []float32) (int, error) {
 		}
 
 		seconds := float64(len(p)-n) / float64(s.sr)
+		var popped bool
 		for note := range s.sched.popSeq(seconds) {
+			popped = true
+			var prev *sequence.Note
+			if s.prevNote != nil {
+				prev = s.prevNote
+			}
+
+			var next *sequence.Note
+			if peek, ok := s.sched.peek(); ok {
+				next = &peek
+			}
+
+			if err := s.renderNotes(note, prev, next); err != nil {
+				copied := copy(p[n:], s.buf)
+				s.buf = s.buf[copied:]
+				n += copied
+				return n, fmt.Errorf("gotau Synth: failed to render note %q: %w", note.Lyric, err)
+			}
+			s.prevNote = &note
+		}
+		if !popped {
+			// ensure we always pop at least some notes to prevent hanging
+			note, ok := s.sched.pop()
+			if !ok {
+				continue
+			}
+
 			var prev *sequence.Note
 			if s.prevNote != nil {
 				prev = s.prevNote
@@ -217,47 +244,63 @@ func (s *Synth) renderNotes(note sequence.Note, prev *sequence.Note, next *seque
 
 		if !ok {
 			s.debugLog("fallback silence", note)
-			buf := make([]float32, int((s.sched.ticksToSeconds(note.Duration)-nextPreutterSec)*float64(s.sr)))
+			silenceSec := s.sched.ticksToSeconds(note.Duration) - nextPreutterSec
+			silenceSec = math.Max(0, silenceSec) // guard to prevent runtime panics
+			buf := make([]float32, int(silenceSec*float64(s.sr)))
 			s.buf = append(s.buf, buf...)
 			s.sched.tickPos += note.Duration
 			return nil
 		}
 
-		if err := s.renderSingleNote(notes[ph.Index], otoEntry, nextPreutterSec); err != nil {
+		if err := s.renderSingleNote(notes[ph.Index], otoEntry, nextPreutterSec, next); err != nil {
 			return fmt.Errorf("failed to render phoneme %q: %w", otoEntry.Alias, err)
 		}
 	}
+	s.sched.tickPos += note.Duration
 	return nil
 }
 
-func (s *Synth) renderSingleNote(note sequence.Note, otoEntry voicebank.OtoEntry, nextPreutterSec float64) error {
+func (s *Synth) renderSingleNote(note sequence.Note, otoEntry voicebank.OtoEntry, nextPreutterSec float64, next *sequence.Note) error {
 	// get preutterance of current note
 	preutterSec := s.getPreutter(otoEntry, note) / 1000
 
 	// emit possible silence before note
 	if startTick := note.Position - s.sched.secondsToTicks(preutterSec); startTick > s.sched.tickPos {
 		s.debugLog("silence", note)
-		buf := make([]float32, int((s.sched.ticksToSeconds(note.Position-s.sched.tickPos)-preutterSec)*float64(s.sr)))
+		silenceSec := s.sched.ticksToSeconds(note.Position-s.sched.tickPos) - preutterSec
+		silenceSec = math.Max(0, silenceSec) // guard to prevent runtime panics
+		buf := make([]float32, int(silenceSec*float64(s.sr)))
 		s.buf = append(s.buf, buf...)
 		s.sched.tickPos = startTick
 	}
 
-	// adjust actual note duration and timing
-	var enroachment float64
-	if _, ok := s.sched.peek(); ok && s.sched.ticksToSeconds(note.Duration) <= nextPreutterSec {
-		enroachment = nextPreutterSec - s.sched.ticksToSeconds(note.Duration)
+	curNoteStartSec := s.sched.ticksToSeconds(note.Position) - preutterSec
+	curNoteEndSec := s.sched.ticksToSeconds(note.Position + note.Duration)
+	// the current note wants to cut in exactly this many seconds
+	nextNoteCutInSec := curNoteEndSec - nextPreutterSec
+
+	// determine true rendering length based on timing and preutterance
+	var trueLength float64
+	if next != nil && nextNoteCutInSec < curNoteStartSec {
+		trueLength = 0
+	} else if next != nil {
+		trueLength = nextNoteCutInSec - curNoteStartSec
+	} else {
+		trueLength = s.sched.ticksToSeconds(note.Duration) + preutterSec
 	}
-	newLength := s.sched.ticksToSeconds(note.Duration) + preutterSec - enroachment
 
-	noteBuf := make([]float32, int(newLength*float64(s.sr)))
+	trueLength = math.Max(0, trueLength) // guard to prevent runtime panics
 
-	newLength = math.Ceil((newLength+s.getStartPoint(note)+25)/50) * 5000
+	noteBuf := make([]float32, int(trueLength*float64(s.sr)))
+
+	trueLength = math.Ceil((trueLength+s.getStartPoint(note)+25)/50) * 5 // seconds
+	trueLengthMs := trueLength * 1000                                    // milliseconds
 	resampleCfg := resample.ResampleConfig{
 		Pitch:       note.Note,
 		Velocity:    note.Velocity,
 		Flags:       note.Flags,
 		Offset:      otoEntry.Offset,
-		Length:      newLength,
+		Length:      trueLengthMs,
 		Consonant:   otoEntry.Consonant,
 		Cutoff:      otoEntry.Cutoff,
 		Intensity:   note.Intensity,
@@ -294,7 +337,7 @@ func (s *Synth) renderSingleNote(note sequence.Note, otoEntry voicebank.OtoEntry
 			return err
 		}
 		if sr := int(deco.Format().SampleRate.Hertz()); sr != s.sr {
-			return fmt.Errorf("voicebank (%d Hz) and synth (%d Hz) sample rate do not match", sr, s.sr)
+			return fmt.Errorf("voicebank (%d Hz) and synth (%d Hz) sample rates do not match", sr, s.sr)
 		}
 
 		if analyzer, ok := s.res.(resample.Analyzer); ok {
@@ -367,8 +410,10 @@ func (s *Synth) renderSingleNote(note sequence.Note, otoEntry voicebank.OtoEntry
 		}
 	}
 
+	//TODO: apply proper concatenation
+	// this is just a placeholder for now
 	s.buf = append(s.buf, noteBuf...)
-	s.sched.tickPos += note.Duration
+
 	return nil
 }
 

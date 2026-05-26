@@ -45,6 +45,15 @@ func (s *scheduler) popSeq(seconds float64) iter.Seq[sequence.Note] {
 	}
 }
 
+func (s *scheduler) pop() (sequence.Note, bool) {
+	if len(s.queue) == 0 {
+		return sequence.Note{}, false
+	}
+	note := s.queue[0]
+	s.queue = s.queue[1:]
+	return note, true
+}
+
 func (s *scheduler) peek() (sequence.Note, bool) {
 	if len(s.queue) == 0 {
 		return sequence.Note{}, false
