@@ -375,44 +375,67 @@ func (s *Synth) renderSingleNote(note sequence.Note, otoEntry voicebank.OtoEntry
 		return fmt.Errorf("failed to read resampled audio: %w", err)
 	}
 
+	var doCacheDone chan error
 	if doCache {
+		doCacheDone = make(chan error, 1)
 		// cache the resampled audio
-		f, err := s.resCache.Create(ctx, key)
-		if err != nil {
-			_ = f.Abort()
-			return fmt.Errorf("failed to create cache entry: %w", err)
-		}
+		go func() {
+			var cacheErr error
+			defer func() {
+				doCacheDone <- cacheErr
+			}()
 
-		enc, err := wav.NewEncoder(
-			f,
-			resampleCfg.AudioFormat,
-			afmt.SampleFormat{BitDepth: 32, Encoding: afmt.SampleEncodingFloat, Endian: binary.LittleEndian},
-			wav.FormatFloat,
-		)
-		if err != nil {
-			_ = f.Abort()
-			return fmt.Errorf("failed to create wav encoder for caching: %w", err)
-		}
+			f, err := s.resCache.Create(ctx, key)
+			if err != nil {
+				_ = f.Abort()
+				cacheErr = fmt.Errorf("failed to create cache entry: %w", err)
+				return
+			}
 
-		if _, err := enc.WriteSamples(noteBuf); err != nil {
-			_ = f.Abort()
-			return fmt.Errorf("failed to cache resampled audio: %w", err)
-		}
+			enc, err := wav.NewEncoder(
+				f,
+				resampleCfg.AudioFormat,
+				afmt.SampleFormat{BitDepth: 32, Encoding: afmt.SampleEncodingFloat, Endian: binary.LittleEndian},
+				wav.FormatFloat,
+			)
+			if err != nil {
+				_ = f.Abort()
+				cacheErr = fmt.Errorf("failed to create wav encoder for caching: %w", err)
+				return
+			}
 
-		if err := enc.Close(); err != nil {
-			_ = f.Abort()
-			return fmt.Errorf("failed to close wav encoder for caching: %w", err)
-		}
+			if _, err := enc.WriteSamples(noteBuf); err != nil {
+				_ = f.Abort()
+				cacheErr = fmt.Errorf("failed to cache resampled audio: %w", err)
+				return
+			}
 
-		if err := f.Close(); err != nil {
-			_ = f.Abort()
-			return fmt.Errorf("failed to close cache entry: %w", err)
-		}
+			if err := enc.Close(); err != nil {
+				_ = f.Abort()
+				cacheErr = fmt.Errorf("failed to close wav encoder for caching: %w", err)
+				return
+			}
+
+			if err := f.Close(); err != nil {
+				_ = f.Abort()
+				cacheErr = fmt.Errorf("failed to close cache entry: %w", err)
+				return
+			}
+		}()
 	}
 
 	//TODO: apply proper concatenation
 	// this is just a placeholder for now
 	s.buf = append(s.buf, noteBuf...)
+
+	// wait for caching to finish and check error
+	if doCache {
+		if err := <-doCacheDone; err != nil {
+			// log error instead???
+			// it's non-critical (kinda) since it only affects caching
+			return err
+		}
+	}
 
 	return nil
 }
