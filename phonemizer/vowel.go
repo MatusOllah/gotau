@@ -11,8 +11,8 @@ func kanaTailVowel(s string) byte {
 
 	r, size := utf8.DecodeLastRuneInString(s)
 
-	// handle chōonpu
-	if r == 'ー' {
+	// handle chōonpu and iteration marks
+	if r == 'ー' || r == 'ゝ' || r == 'ゞ' || r == 'ヽ' || r == 'ヾ' {
 		return kanaTailVowel(s[:len(s)-size])
 	}
 

@@ -42,7 +42,7 @@ var kanaVowelTable = [...]byte{
 	0x61, // だ
 	0x69, // ち
 	0x69, // ぢ
-	0x00, // っ (unmapped)
+	0x75, // っ
 	0x75, // つ
 	0x75, // づ
 	0x65, // て
@@ -85,15 +85,15 @@ var kanaVowelTable = [...]byte{
 	0x75, // る
 	0x65, // れ
 	0x6f, // ろ
-	0x00, // ゎ (unmapped)
+	0x61, // ゎ
 	0x61, // わ
 	0x69, // ゐ
 	0x65, // ゑ
 	0x6f, // を
 	0x6e, // ん
-	0x00, // ゔ (unmapped)
-	0x00, // ゕ (unmapped)
-	0x00, // ゖ (unmapped)
+	0x75, // ゔ
+	0x61, // ゕ
+	0x65, // ゖ
 	0x00, // ゗ (unmapped)
 	0x00, // ゘ (unmapped)
 	0x00, // ゙ (unmapped)
@@ -102,7 +102,7 @@ var kanaVowelTable = [...]byte{
 	0x00, // ゜ (unmapped)
 	0x00, // ゝ (unmapped)
 	0x00, // ゞ (unmapped)
-	0x00, // ゟ (unmapped)
+	0x69, // ゟ
 	0x00, // ゠ (unmapped)
 	0x61, // ァ
 	0x61, // ア
@@ -138,7 +138,7 @@ var kanaVowelTable = [...]byte{
 	0x61, // ダ
 	0x69, // チ
 	0x69, // ヂ
-	0x00, // ッ (unmapped)
+	0x75, // ッ
 	0x75, // ツ
 	0x75, // ヅ
 	0x65, // テ
@@ -181,19 +181,19 @@ var kanaVowelTable = [...]byte{
 	0x75, // ル
 	0x65, // レ
 	0x6f, // ロ
-	0x00, // ヮ (unmapped)
+	0x61, // ヮ
 	0x61, // ワ
 	0x69, // ヰ
 	0x65, // ヱ
 	0x6f, // ヲ
 	0x6e, // ン
 	0x75, // ヴ
-	0x00, // ヵ (unmapped)
-	0x00, // ヶ (unmapped)
-	0x00, // ヷ (unmapped)
-	0x00, // ヸ (unmapped)
-	0x00, // ヹ (unmapped)
-	0x00, // ヺ (unmapped)
+	0x61, // ヵ
+	0x61, // ヶ
+	0x61, // ヷ
+	0x69, // ヸ
+	0x65, // ヹ
+	0x6f, // ヺ
 	0x00, // ・ (unmapped)
 	0x00, // ー (unmapped)
 	0x00, // ヽ (unmapped)
