@@ -15,6 +15,7 @@ import (
 	"github.com/SladkyCitron/resona/freq"
 
 	"github.com/SladkyCitron/gotau/cache/diskcache"
+	"github.com/SladkyCitron/gotau/concat"
 	"github.com/SladkyCitron/gotau/phonemizer"
 	"github.com/SladkyCitron/gotau/resample/external"
 	"github.com/SladkyCitron/gotau/sequence/ust"
@@ -86,7 +87,7 @@ func main() {
 		//cmd.Stdout = os.Stdout
 		//cmd.Stderr = os.Stderr
 	}
-	synth := gotau.New(44100, vb, res, nil)
+	synth := gotau.New(44100, vb, res, &concat.Append{})
 	synth.SetPhonemizer(&phonemizer.Default{})
 	cacheDir, _ := diskcache.Dir(gotau.ResamplerDiskCacheDir)
 	synth.SetResamplerCache(diskcache.New(cacheDir, gotau.ResamplerDiskCacheExt))

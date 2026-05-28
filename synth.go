@@ -27,8 +27,6 @@ import (
 	"github.com/SladkyCitron/resona/freq"
 )
 
-const startBufSize = 4096 // Size of initial allocation for buffer
-
 // Synth is the main singing voice synthsizer that renders notes into audio samples.
 type Synth struct {
 	vb       *voicebank.Voicebank
@@ -39,6 +37,8 @@ type Synth struct {
 	sched    *scheduler
 	sr       int
 	buf      []float32
+	tailBuf  []float32
+	tailPos  int
 	prevNote *sequence.Note
 }
 
@@ -52,7 +52,8 @@ func New(sr int, vb *voicebank.Voicebank, res resample.Resampler, cat concat.Con
 		resCache: &cache.NopCache{},
 		sched:    &scheduler{},
 		sr:       sr,
-		buf:      make([]float32, 0, startBufSize),
+		buf:      make([]float32, 0, sr), // 1 second buffer by default
+		tailBuf:  make([]float32, sr),
 	}
 	return s
 }
@@ -140,6 +141,7 @@ func (s *Synth) ReadSamples(p []float32) (int, error) {
 
 			if err := s.renderNotes(note, prev, next); err != nil {
 				copied := copy(p[n:], s.buf)
+				s.pushTail(p[n : n+copied])
 				s.buf = s.buf[copied:]
 				n += copied
 				return n, fmt.Errorf("gotau Synth: failed to render note %q: %w", note.Lyric, err)
@@ -165,6 +167,7 @@ func (s *Synth) ReadSamples(p []float32) (int, error) {
 
 			if err := s.renderNotes(note, prev, next); err != nil {
 				copied := copy(p[n:], s.buf)
+				s.pushTail(p[n : n+copied])
 				s.buf = s.buf[copied:]
 				n += copied
 				return n, fmt.Errorf("gotau Synth: failed to render note %q: %w", note.Lyric, err)
@@ -177,6 +180,34 @@ func (s *Synth) ReadSamples(p []float32) (int, error) {
 		n += copied
 	}
 	return n, nil
+}
+
+func (s *Synth) pushTail(buf []float32) {
+	if len(s.tailBuf) == 0 || len(buf) == 0 {
+		return
+	}
+
+	if len(buf) >= len(s.tailBuf) {
+		// only keep the last len(s.tailBuf) samples of buf
+		copy(s.tailBuf, buf[len(buf)-len(s.tailBuf):])
+		s.tailPos = len(s.tailBuf)
+		return
+	}
+
+	// shift to make room
+	n := len(buf)
+	if s.tailPos < len(s.tailBuf) {
+		s.tailPos += copy(s.tailBuf[s.tailPos:], buf)
+		return
+	}
+
+	// shift left and append
+	copy(s.tailBuf, s.tailBuf[n:])
+	copy(s.tailBuf[len(s.tailBuf)-n:], buf)
+}
+
+func (s *Synth) peekTail() []float32 {
+	return s.tailBuf[:s.tailPos]
 }
 
 func (s *Synth) renderNotes(note sequence.Note, prev *sequence.Note, next *sequence.Note) error {
@@ -291,6 +322,7 @@ func (s *Synth) renderSingleNote(note sequence.Note, otoEntry voicebank.OtoEntry
 
 	trueLength = math.Max(0, trueLength) // guard to prevent runtime panics
 
+	tail := s.peekTail()
 	noteBuf := make([]float32, int(trueLength*float64(s.sr)))
 
 	trueLength = math.Ceil((trueLength+s.getStartPoint(note)+25)/50) * 5 // seconds
@@ -424,9 +456,17 @@ func (s *Synth) renderSingleNote(note sequence.Note, otoEntry voicebank.OtoEntry
 		}()
 	}
 
-	//TODO: apply proper concatenation
-	// this is just a placeholder for now
-	s.buf = append(s.buf, noteBuf...)
+	concatCfg := concat.ConcatenateConfig{
+		Offset:   otoEntry.Offset,
+		Length:   trueLengthMs,
+		Overlap:  s.getOverlap(otoEntry, note),
+		Envelope: note.Envelope,
+	}
+	out, err := s.cat.Concatenate(tail, noteBuf, concatCfg)
+	if err != nil {
+		return fmt.Errorf("failed to concatenate: %w", err)
+	}
+	s.buf = append(s.buf, out...)
 
 	// wait for caching to finish and check error
 	if doCache {
@@ -463,6 +503,13 @@ func (s *Synth) getPreutter(otoEntry voicebank.OtoEntry, note sequence.Note) flo
 
 func (s *Synth) getStartPoint(note sequence.Note) float64 {
 	return note.StartPoint * math.Pow(2, 1-note.Velocity/100)
+}
+
+func (s *Synth) getOverlap(otoEntry voicebank.OtoEntry, note sequence.Note) float64 {
+	if note.VoiceOverlap != nil {
+		return *note.VoiceOverlap
+	}
+	return otoEntry.Overlap
 }
 
 func (s *Synth) debugLog(msg string, note sequence.Note) {
