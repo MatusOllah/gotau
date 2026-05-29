@@ -1,6 +1,14 @@
+// Package concat defines the Concatenator interface and provides multiple implementations.
+//
+// "Concatenator" refers to the UTAU wavtool.
+// It is responsible for concatenating a resampled note with the previous note's tail
+// to create a smooth transition between notes.
 package concat
 
-import "github.com/SladkyCitron/gotau/sequence"
+import (
+	"github.com/SladkyCitron/gotau/sequence"
+	"github.com/SladkyCitron/resona/afmt"
+)
 
 // Concatenator concatenates a resampled note with the previous note's tail to create a smooth transition between notes.
 type Concatenator interface {
@@ -22,4 +30,7 @@ type ConcatenateConfig struct {
 	// Envelope is the envelope curve to apply to the concatenated note.
 	// Usually the curve only has 5 points and linear interpolation.
 	Envelope sequence.Curve
+
+	// AudioFormat is the audio format of the input and output audio data.
+	AudioFormat afmt.Format
 }
