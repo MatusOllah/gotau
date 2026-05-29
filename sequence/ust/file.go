@@ -108,6 +108,8 @@ func envelopeToCurve(env *Envelope, noteDurMs float64) sequence.Curve {
 			v5 = 0
 		}
 		add(p5, v5)
+	} else {
+		add(noteDurMs, 0)
 	}
 
 	return points
