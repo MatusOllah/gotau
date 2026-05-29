@@ -1,3 +1,11 @@
+// Package resample defines the Resampler interface and provides multiple implementations.
+//
+// Resamplers are responsible for rendering a note given an input voice sample and
+// resampling parameters (pitch, velocity, etc.). It has nothing to do with sample rate conversion;
+// it purely refers to the UTAU resampler and the process of rendering a note from a base voice sample.
+//
+// Some resamplers are also capable of analysis and using per-voice sample analysis sidecar files
+// (e.g. .frq) for caching F0/spectral features and improving resampling speed. These resamplers implement the [Analyzer] interface.
 package resample
 
 import (
