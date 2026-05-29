@@ -301,6 +301,7 @@ func (s *Synth) renderSingleNote(note sequence.Note, otoEntry voicebank.OtoEntry
 		silenceSec := s.sched.ticksToSeconds(note.Position-s.sched.tickPos) - preutterSec
 		silenceSec = math.Max(0, silenceSec) // guard to prevent runtime panics
 		buf := make([]float32, int(silenceSec*float64(s.sr)))
+		//TODO: we'll have to probably concatenate this silence buffer with the concatenator instead of append
 		s.buf = append(s.buf, buf...)
 		s.sched.tickPos = startTick
 	}
@@ -325,6 +326,7 @@ func (s *Synth) renderSingleNote(note sequence.Note, otoEntry voicebank.OtoEntry
 	tail := s.peekTail()
 	noteBuf := make([]float32, int(trueLength*float64(s.sr)))
 
+	// this line looks cursed but it actually works, it's in seconds tho
 	trueLength = math.Ceil((trueLength+s.getStartPoint(note)+25)/50) * 5 // seconds
 	trueLengthMs := trueLength * 1000                                    // milliseconds
 	resampleCfg := resample.ResampleConfig{
@@ -457,10 +459,11 @@ func (s *Synth) renderSingleNote(note sequence.Note, otoEntry voicebank.OtoEntry
 	}
 
 	concatCfg := concat.ConcatenateConfig{
-		Offset:   otoEntry.Offset,
-		Length:   trueLengthMs,
-		Overlap:  s.getOverlap(otoEntry, note),
-		Envelope: note.Envelope,
+		Offset:      otoEntry.Offset,
+		Length:      trueLengthMs,
+		Overlap:     s.getOverlap(otoEntry, note),
+		Envelope:    note.Envelope,
+		AudioFormat: afmt.Format{SampleRate: freq.Frequency(s.sr) * freq.Hertz, NumChannels: 1},
 	}
 	out, err := s.cat.Concatenate(tail, noteBuf, concatCfg)
 	if err != nil {
