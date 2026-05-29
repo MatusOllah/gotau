@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/SladkyCitron/resona/dsp"
+	"github.com/SladkyCitron/resona/freq"
 )
 
 // Default is the default [Concatenator]. It mimics original UTAU wavtool behavior.
@@ -11,18 +12,9 @@ type Default struct {
 	env []float32
 }
 
-/*
-func iclamp(value, min, max int) int {
-	switch {
-	case value < min:
-		return min
-	case value > max:
-		return max
-	default:
-		return value
-	}
+func msToSamples(ms float64, sr freq.Frequency) int {
+	return int(ms / 1000 * sr.Hertz())
 }
-*/
 
 func (d *Default) interpolateEnvelope(startX int, startY float64, endX int, endY float64) {
 	if startX == endX || startX >= len(d.env) {
@@ -46,10 +38,9 @@ func (d *Default) Concatenate(tail []float32, note []float32, cfg ConcatenateCon
 		return nil, errors.New("envelope curve must have 5 points")
 	}
 
-	offsetSamples := int(cfg.Offset / 1000 * float64(cfg.AudioFormat.SampleRate.Hertz()))
-	lengthSamples := int(cfg.Length / 1000 * float64(cfg.AudioFormat.SampleRate.Hertz()))
-	overlapSamples := int(cfg.Overlap / 1000 * float64(cfg.AudioFormat.SampleRate.Hertz()))
-
+	offsetSamples := msToSamples(cfg.Offset, cfg.AudioFormat.SampleRate)
+	lengthSamples := msToSamples(cfg.Length, cfg.AudioFormat.SampleRate)
+	overlapSamples := msToSamples(cfg.Overlap, cfg.AudioFormat.SampleRate)
 	if offsetSamples < 0 {
 		offsetSamples = 0
 	}
@@ -68,15 +59,15 @@ func (d *Default) Concatenate(tail []float32, note []float32, cfg ConcatenateCon
 	}
 
 	// interpolate envelope
-	if cap(d.env) < len(buf) {
-		d.env = make([]float32, len(buf))
-	} else {
-		d.env = d.env[:len(buf)]
-	}
-	d.interpolateEnvelope(cfg.Envelope[0].X, cfg.Envelope[0].Y, cfg.Envelope[1].X, cfg.Envelope[1].Y)
-	d.interpolateEnvelope(cfg.Envelope[1].X, cfg.Envelope[1].Y, cfg.Envelope[2].X, cfg.Envelope[2].Y)
-	d.interpolateEnvelope(cfg.Envelope[2].X, cfg.Envelope[2].Y, cfg.Envelope[3].X, cfg.Envelope[3].Y)
-	d.interpolateEnvelope(cfg.Envelope[3].X, cfg.Envelope[3].Y, cfg.Envelope[4].X, cfg.Envelope[4].Y)
+	x0 := msToSamples(cfg.Envelope[0].X, cfg.AudioFormat.SampleRate)
+	x1 := msToSamples(cfg.Envelope[1].X, cfg.AudioFormat.SampleRate)
+	x2 := msToSamples(cfg.Envelope[2].X, cfg.AudioFormat.SampleRate)
+	x3 := msToSamples(cfg.Envelope[3].X, cfg.AudioFormat.SampleRate)
+	x4 := msToSamples(cfg.Envelope[4].X, cfg.AudioFormat.SampleRate)
+	d.interpolateEnvelope(x0, cfg.Envelope[0].Y, x1, cfg.Envelope[1].Y)
+	d.interpolateEnvelope(x1, cfg.Envelope[1].Y, x2, cfg.Envelope[2].Y)
+	d.interpolateEnvelope(x2, cfg.Envelope[2].Y, x3, cfg.Envelope[3].Y)
+	d.interpolateEnvelope(x3, cfg.Envelope[3].Y, x4, cfg.Envelope[4].Y)
 
 	// apply envelope and crossfade
 	for i := range buf {

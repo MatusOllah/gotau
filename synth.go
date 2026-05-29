@@ -326,9 +326,8 @@ func (s *Synth) renderSingleNote(note sequence.Note, otoEntry voicebank.OtoEntry
 	tail := s.peekTail()
 	noteBuf := make([]float32, int(trueLength*float64(s.sr)))
 
-	// this line looks cursed but it actually works, it's in seconds tho
-	trueLength = math.Ceil((trueLength+s.getStartPoint(note)+25)/50) * 5 // seconds
-	trueLengthMs := trueLength * 1000                                    // milliseconds
+	trueLengthMs := trueLength * 1000 // milliseconds
+	trueLengthMs = math.Ceil((trueLengthMs+s.getStartPoint(note)+25)/50) * 50
 	resampleCfg := resample.ResampleConfig{
 		Pitch:       note.Note,
 		Velocity:    note.Velocity,
@@ -340,7 +339,6 @@ func (s *Synth) renderSingleNote(note sequence.Note, otoEntry voicebank.OtoEntry
 		Intensity:   note.Intensity,
 		Modulation:  note.Modulation,
 		Tempo:       s.sched.bpm,
-		Resolution:  s.sched.tpqn,
 		PitchBend:   note.PitchBend,
 		AudioFormat: afmt.Format{SampleRate: freq.Frequency(s.sr) * freq.Hertz, NumChannels: 1},
 	}

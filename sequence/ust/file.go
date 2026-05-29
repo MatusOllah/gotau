@@ -70,12 +70,12 @@ func envelopeToCurve(env *Envelope, noteDurMs float64) sequence.Curve {
 		return points
 	}
 
-	add := func(t, v float64) {
-		// t = ticks
-		// v = percentage
+	add := func(x, y float64) {
+		// x = milliseconds
+		// y = percentage
 		points = append(points, sequence.CurvePoint{
-			X:      int(t),
-			Y:      v / 100,
+			X:      x,
+			Y:      y / 100,
 			Interp: sequence.CurveInterpolationLinear,
 		})
 	}
@@ -139,7 +139,7 @@ func pitchBendToCurve(pb *PitchBend) sequence.Curve {
 	y := pb.Start.Y
 	for i := range pb.Widths {
 		points = append(points, sequence.CurvePoint{
-			X:      int(x),
+			X:      x,
 			Y:      y,
 			Interp: convertPBM(pb.Modes[i]),
 		})

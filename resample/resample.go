@@ -79,10 +79,6 @@ type ResampleConfig struct {
 	// Tempo is the tempo in BPM.
 	Tempo float64
 
-	// Resolution is the timing resolution in ticks per quarter note (TPQN).
-	// It is only used for sampling the pitch bend curve.
-	Resolution int
-
 	// PitchBend is the pitch bend curve. It is a curve that maps time (in MIDI ticks) to pitch (in semitones).
 	PitchBend sequence.Curve
 

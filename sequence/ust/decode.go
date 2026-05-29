@@ -206,7 +206,7 @@ func (f *File) parseNote(sec *ini.Section) (err error) {
 	}
 
 	// Envelope
-	note.Envelope = nil
+	note.Envelope, _ = ParseEnvelope("0,5,35,0,100,100,0,%,0,10,100") // default envelope
 	if key, err := sec.GetKey("Envelope"); err == nil && key.String() != "" {
 		_envelope, err := ParseEnvelope(key.String())
 		if err != nil {

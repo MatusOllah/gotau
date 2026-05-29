@@ -22,8 +22,8 @@ type Curve []CurvePoint
 
 // CurvePoint represents a single point on a curve.
 type CurvePoint struct {
-	// X is the position in MIDI ticks.
-	X int
+	// X is the position in milliseconds.
+	X float64
 
 	// Y is the value.
 	Y float64
@@ -34,20 +34,20 @@ type CurvePoint struct {
 
 var cmpFn = func(a, b CurvePoint) int { return cmp.Compare(a.X, b.X) }
 
-// At calculates and returns the value at the tick.
-func (c Curve) At(tick int) float64 {
-	if len(c) == 0 || tick < c[0].X || tick > c[len(c)-1].X {
+// At calculates and returns the value at the position in milliseconds.
+func (c Curve) At(x float64) float64 {
+	if len(c) == 0 || x < c[0].X || x > c[len(c)-1].X {
 		return math.NaN()
 	}
 
 	// exact match shortcut
-	i, ok := slices.BinarySearchFunc(c, CurvePoint{X: tick}, cmpFn)
+	i, ok := slices.BinarySearchFunc(c, CurvePoint{X: x}, cmpFn)
 	if ok {
 		return c[i].Y
 	}
 
 	// find start and end points that tick sits in between
-	i, _ = slices.BinarySearchFunc(c, CurvePoint{X: tick}, cmpFn)
+	i, _ = slices.BinarySearchFunc(c, CurvePoint{X: x}, cmpFn)
 	if i == 0 || i >= len(c) {
 		return math.NaN()
 	}
@@ -58,7 +58,7 @@ func (c Curve) At(tick int) float64 {
 	if dx <= 0 {
 		return start.Y
 	}
-	t := float64(tick-start.X) / float64(dx)
+	t := (x - start.X) / dx
 
 	switch start.Interp {
 	case CurveInterpolationLinear:
@@ -66,7 +66,7 @@ func (c Curve) At(tick int) float64 {
 	case CurveInterpolationSine:
 		return lerp(start.Y, end.Y, (1-math.Cos(math.Pi*t))/2)
 	case CurveInterpolationRigid:
-		if tick < end.X {
+		if x < end.X {
 			return start.Y
 		}
 		return end.Y

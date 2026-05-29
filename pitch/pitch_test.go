@@ -14,13 +14,13 @@ func TestEncodeResamplerPitchBendString(t *testing.T) {
 		{X: 960, Y: 0},
 	}
 
-	got := pitch.EncodeResamplerPitchBendString(curve, 0, 1, 120, 480)
+	got := pitch.EncodeResamplerPitchBendString(curve, 0, 1)
 
 	assert.Equal(t, got, "AA#200#")
 }
 
 func TestEncodeResamplerPitchBendString_NilCurve(t *testing.T) {
-	got := pitch.EncodeResamplerPitchBendString(nil, 0, 1, 120, 480)
+	got := pitch.EncodeResamplerPitchBendString(nil, 0, 1)
 
 	assert.Equal(t, got, "AA")
 }
@@ -31,6 +31,6 @@ func BenchmarkEncodeResamplerPitchBendString(b *testing.B) {
 		{X: 960, Y: 20},
 	}
 	for b.Loop() {
-		_ = pitch.EncodeResamplerPitchBendString(curve, 60, 1, 120, 480)
+		_ = pitch.EncodeResamplerPitchBendString(curve, 60, 1)
 	}
 }
