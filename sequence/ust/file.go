@@ -7,6 +7,16 @@ import (
 	"gopkg.in/ini.v1"
 )
 
+// 0,5,35,0,100,100,0,%,0,10,100
+// p1,p2,p3,v1,v2,v3,v4,%,p4,p5,v5
+var defaultEnvelope = sequence.Curve{
+	{X: 0, Y: 0, Interp: sequence.CurveInterpolationLinear},
+	{X: 5, Y: 1, Interp: sequence.CurveInterpolationLinear},
+	{X: 35, Y: 1, Interp: sequence.CurveInterpolationLinear},
+	{X: 0, Y: 0, Interp: sequence.CurveInterpolationLinear},
+	{X: 10, Y: 1, Interp: sequence.CurveInterpolationLinear},
+}
+
 var _ sequence.Sequencer = (*File)(nil)
 
 // File represents a parsed UST file.
@@ -36,8 +46,6 @@ func (f *File) Sequence() (sequence.Sequence, error) {
 			continue
 		}
 
-		msPerTick := 60000 / (f.Settings.Tempo * float64(seq.Metadata.Resolution))
-
 		flags, err := sequence.ParseFlags(note.Flags)
 		if err != nil {
 			return sequence.Sequence{}, fmt.Errorf("ust Sequence: failed to parse flags for note #%04d: %w", i+1, err)
@@ -54,7 +62,7 @@ func (f *File) Sequence() (sequence.Sequence, error) {
 			Preutterance: note.Preutterance,
 			VoiceOverlap: note.VoiceOverlap,
 			StartPoint:   note.StartPoint,
-			Envelope:     envelopeToCurve(note.Envelope, msPerTick*float64(note.Length)),
+			Envelope:     envelopeToCurve(note.Envelope),
 			PitchBend:    pitchBendToCurve(note.PitchBend),
 			Flags:        flags,
 		})
@@ -63,53 +71,20 @@ func (f *File) Sequence() (sequence.Sequence, error) {
 	return seq, nil
 }
 
-func envelopeToCurve(env *Envelope, noteDurMs float64) sequence.Curve {
+func envelopeToCurve(env *Envelope) sequence.Curve {
 	points := make(sequence.Curve, 0, 5)
 
 	if env == nil {
-		return points
+		return defaultEnvelope
 	}
 
-	add := func(x, y float64) {
-		// x = milliseconds
-		// y = percentage
-		points = append(points, sequence.CurvePoint{
-			X:      x,
-			Y:      y / 100,
-			Interp: sequence.CurveInterpolationLinear,
-		})
-	}
-
-	resolveV := func(value EnvelopeValue) float64 {
-		if value.Auto {
-			return 0
-		} else {
-			return value.Value
-		}
-	}
-
-	add(env.P1.Value, resolveV(env.V1))
-	add(env.P2.Value, resolveV(env.V2))
-	add(env.P3.Value, resolveV(env.V3))
-
-	p4 := env.P4.Value
-	if env.P4.Auto {
-		p4 = noteDurMs
-	}
-	add(p4, resolveV(env.V4))
-
-	if !env.P5.Auto || !env.V5.Auto {
-		p5 := env.P5.Value
-		if env.P5.Auto {
-			p5 = noteDurMs
-		}
-		v5 := env.V5.Value
-		if env.V5.Auto {
-			v5 = 0
-		}
-		add(p5, v5)
-	} else {
-		add(noteDurMs, 0)
+	points = append(points, sequence.CurvePoint{X: env.P1, Y: env.V1 / 100, Interp: sequence.CurveInterpolationLinear})
+	points = append(points, sequence.CurvePoint{X: env.P2, Y: env.V2 / 100, Interp: sequence.CurveInterpolationLinear})
+	points = append(points, sequence.CurvePoint{X: env.P3, Y: env.V3 / 100, Interp: sequence.CurveInterpolationLinear})
+	points = append(points, sequence.CurvePoint{X: env.P4, Y: env.V3 / 100, Interp: sequence.CurveInterpolationLinear})
+	if env.HasRelease {
+		points[3].Y = env.V4 / 100
+		points = append(points, sequence.CurvePoint{X: env.P5, Y: env.V5 / 100, Interp: sequence.CurveInterpolationLinear})
 	}
 
 	return points

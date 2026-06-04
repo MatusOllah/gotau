@@ -1,4 +1,2 @@
-// Package ust implements decoding of UST (UTAU Sequence Text) as implemented in [libutaust].
-//
-// [libutaust]: https://github.com/Sleepwalking/libutaust
+// Package ust implements decoding of UTAU Sequence Text (UST).
 package ust

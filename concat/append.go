@@ -1,5 +1,7 @@
 package concat
 
+var _ Concatenator = (*Append)(nil)
+
 // Append is the simplest [Concatenator] possible.
 // It just appends the note samples to the tail without doing any processing. May cause clicks between notes.
 type Append struct{}

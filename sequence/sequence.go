@@ -68,7 +68,8 @@ type Note struct {
 	// StartPoint is the time where to begin sampling inside the audio file (in milliseconds).
 	StartPoint float64
 
-	// Envelope is the volume envelope curve. It should have at most 5 points.
+	// Envelope is the volume envelope curve. It should have 4 or 5 points.
+	// If it has 5 points, the last point represent the release phase (i.e. sustain end and fade-out).
 	Envelope Curve
 
 	// PitchBend is the pitch bend curve. It is a curve that maps time (in MIDI ticks) to pitch (in semitones).

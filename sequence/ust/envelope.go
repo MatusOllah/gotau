@@ -2,56 +2,24 @@ package ust
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 )
 
 // Envelope represents a volume envelope.
 type Envelope struct {
-	P1 EnvelopeValue // P1 is the fade-in start offset (in milliseconds).
-	P2 EnvelopeValue // P2 is the fade-in end offset (in milliseconds).
-	P3 EnvelopeValue // P3 is the decay start offset (in milliseconds).
-	V1 EnvelopeValue // V1 is the volume at P1 (in %).
-	V2 EnvelopeValue // V2 is the volume at P2 (in %).
-	V3 EnvelopeValue // V3 is the volume at P3 (in %).
-	V4 EnvelopeValue // V4 is the volume at P4 (in %).
-	P4 EnvelopeValue // P4 is the sustain end offset (in milliseconds).
-	P5 EnvelopeValue // P5 is the fade-out end offset (in milliseconds).
-	V5 EnvelopeValue // V5 is the volume at P5 (in %).
-}
-
-// EnvelopeValue represents a single value in an envelope, which can be either
-// a fixed value or an automatic value (represented in UST as %).
-type EnvelopeValue struct {
-	Value float64
-	Auto  bool
-}
-
-// Env is shorthand for &Envelope{...}.
-func Env(p1, p2, p3, v1, v2, v3, v4, p4, p5, v5 float64) *Envelope {
-	return &Envelope{
-		P1: EnvelopeValue{Value: p1},
-		P2: EnvelopeValue{Value: p2},
-		P3: EnvelopeValue{Value: p3},
-		V1: EnvelopeValue{Value: v1},
-		V2: EnvelopeValue{Value: v2},
-		V3: EnvelopeValue{Value: v3},
-		V4: EnvelopeValue{Value: v4},
-		P4: EnvelopeValue{Value: p4},
-		P5: EnvelopeValue{Value: p5},
-		V5: EnvelopeValue{Value: v5},
-	}
-}
-
-func parseEnvelopeValue(s string) (EnvelopeValue, error) {
-	if s == "%" || s == "" {
-		return EnvelopeValue{Auto: true}, nil
-	}
-	v, err := strconv.ParseFloat(s, 64)
-	if err != nil {
-		return EnvelopeValue{}, err
-	}
-	return EnvelopeValue{Value: v}, nil
+	P1         float64 // P1 is the fade-in start offset (in milliseconds).
+	P2         float64 // P2 is the fade-in end offset (in milliseconds).
+	P3         float64 // P3 is the decay start offset (in milliseconds).
+	V1         float64 // V1 is the volume at P1 (in %).
+	V2         float64 // V2 is the volume at P2 (in %).
+	V3         float64 // V3 is the volume at P3 (in %).
+	V4         float64 // V4 is the volume at P4 (in %).
+	P4         float64 // P4 is the sustain end offset (in milliseconds).
+	P5         float64 // P5 is the fade-out end offset (in milliseconds).
+	V5         float64 // V5 is the volume at P5 (in %).
+	HasRelease bool    // HasRelease indicates whether the envelope has a release (i.e. P4 and P5 are defined).
 }
 
 // ParseEnvelope parses a string representing an [Envelope] in an UST note.
@@ -61,17 +29,24 @@ func ParseEnvelope(s string) (*Envelope, error) {
 	if len(parts) < 7 {
 		return nil, fmt.Errorf("envelope string must contain at least 7 values, got %d", len(parts))
 	}
-	if len(parts) > 11 {
-		return nil, fmt.Errorf("envelope string must contain at most 10 values, got %d", len(parts))
+	if len(parts) > 12 {
+		return nil, fmt.Errorf("envelope string must contain at most 11 values, got %d", len(parts))
 	}
 
-	vals := make([]EnvelopeValue, len(parts))
+	vals := make([]float64, len(parts))
 	for i, p := range parts {
-		ev, err := parseEnvelopeValue(strings.TrimSpace(p))
-		if err != nil {
-			return nil, fmt.Errorf("invalid envelope value at %d: %w", i, err)
+		p = strings.TrimSpace(p)
+		if p == "%" {
+			vals[i] = math.NaN() // use NaN to indicate separator
+			continue
 		}
-		vals[i] = ev
+		v, err := strconv.ParseFloat(p, 64)
+		if err != nil {
+			//return nil, fmt.Errorf("invalid envelope value at %d: %w", i, err)
+			vals[i] = 0
+			continue
+		}
+		vals[i] = v
 	}
 
 	env := &Envelope{
@@ -84,15 +59,11 @@ func ParseEnvelope(s string) (*Envelope, error) {
 		V4: vals[6],
 	}
 
-	env.P4.Auto, env.P5.Auto, env.V5.Auto = true, true, true
-	if len(vals) >= 8 {
-		env.P4 = vals[7]
-	}
-	if len(vals) >= 9 {
-		env.P5 = vals[8]
-	}
-	if len(vals) >= 10 {
-		env.V5 = vals[9]
+	if len(parts) >= 11 && strings.TrimSpace(parts[7]) == "%" {
+		env.HasRelease = true
+		env.P4 = vals[8]
+		env.P5 = vals[9]
+		env.V5 = vals[10]
 	}
 
 	return env, nil

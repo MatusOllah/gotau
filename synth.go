@@ -458,7 +458,7 @@ func (s *Synth) renderSingleNote(note sequence.Note, otoEntry voicebank.OtoEntry
 
 	concatCfg := concat.ConcatenateConfig{
 		Offset:      otoEntry.Offset,
-		Length:      trueLengthMs,
+		Length:      trueLength * 1000,
 		Overlap:     s.getOverlap(otoEntry, note),
 		Envelope:    note.Envelope,
 		AudioFormat: afmt.Format{SampleRate: freq.Frequency(s.sr) * freq.Hertz, NumChannels: 1},
