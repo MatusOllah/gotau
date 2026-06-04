@@ -38,9 +38,9 @@ Expect bugs and breaking changes.
 ## 🐹 Why Go?
 
 Most vocal synth frontends are written in C# or Java, and the underlying synthesis engines are often written in lower-level languages like C++.
-GoTAU explores what a singing voice synthesizer would look like if it were entirely written in Go, leveraging Go's modern tooling, simplicity, concurrency model, and performance.
+GoTAU explores what a singing voice synthesizer would look like if it were mostly written in Go, leveraging Go's modern tooling, simplicity, concurrency model, and performance.
 
-Also, I just really like Go and wanted to see if I could build a vocal synth with it!
+Also, I just really like Go and singing voice synthesis tech and wanted to see if I could build my own vocal synth with it!
 
 ## 📖 The name
 
