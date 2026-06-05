@@ -72,7 +72,7 @@ type Note struct {
 	// If it has 5 points, the last point represent the release phase (i.e. sustain end and fade-out).
 	Envelope Curve
 
-	// PitchBend is the pitch bend curve. It is a curve that maps time (in MIDI ticks) to pitch (in semitones).
+	// PitchBend is the pitch bend curve. It is a curve that maps time (in milliseconds) to pitch (in cents).
 	PitchBend Curve
 
 	// Flags are the flags for passing to the resampler. These can be resampler-specific.

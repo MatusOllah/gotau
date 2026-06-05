@@ -3,6 +3,7 @@ package ust
 import (
 	"fmt"
 
+	"github.com/SladkyCitron/gotau/internal/timeutil"
 	"github.com/SladkyCitron/gotau/sequence"
 	"gopkg.in/ini.v1"
 )
@@ -51,6 +52,7 @@ func (f *File) Sequence() (sequence.Sequence, error) {
 			return sequence.Sequence{}, fmt.Errorf("ust Sequence: failed to parse flags for note #%04d: %w", i+1, err)
 		}
 
+		noteDurMs := timeutil.TicksToSeconds(note.Length, seq.Metadata.Resolution, seq.Metadata.Tempo) * 1000
 		seq.Notes = append(seq.Notes, sequence.Note{
 			Position:     position,
 			Duration:     note.Length,
@@ -63,7 +65,7 @@ func (f *File) Sequence() (sequence.Sequence, error) {
 			VoiceOverlap: note.VoiceOverlap,
 			StartPoint:   note.StartPoint,
 			Envelope:     envelopeToCurve(note.Envelope),
-			PitchBend:    pitchBendToCurve(note.PitchBend),
+			PitchBend:    pitchBendToCurve(note.PitchBend, f.Settings.Mode2, noteDurMs),
 			Flags:        flags,
 		})
 		position += note.Length
@@ -90,11 +92,11 @@ func envelopeToCurve(env *Envelope) sequence.Curve {
 	return points
 }
 
-func pitchBendToCurve(pb *PitchBend) sequence.Curve {
+func pitchBendToCurve(pb *PitchBend, mode2 bool, noteDurMs float64) sequence.Curve {
 	if pb == nil {
 		return sequence.Curve{}
 	}
-	if (pb.Start.X == 0 && pb.Start.Y == 0) || len(pb.Widths) == 0 {
+	if len(pb.Widths) == 0 {
 		return sequence.Curve{}
 	}
 
@@ -108,20 +110,62 @@ func pitchBendToCurve(pb *PitchBend) sequence.Curve {
 		pb.Modes = append(pb.Modes, PitchBendModeSine)
 	}
 
-	points := sequence.Curve{}
+	points := make(sequence.Curve, 0, len(pb.Widths)+1)
 
-	x := pb.Start.X
-	y := pb.Start.Y
-	for i := range pb.Widths {
+	// Mode1
+	if !mode2 {
+		x := pb.Start.X
+		y := pb.Start.Y
+		for i := range pb.Widths {
+			points = append(points, sequence.CurvePoint{
+				X:      x,
+				Y:      y,
+				Interp: convertPBM(pb.Modes[i]),
+			})
+
+			x += pb.Widths[i]
+			y = pb.Ys[i]
+		}
+
+		// final point
 		points = append(points, sequence.CurvePoint{
-			X:      x,
-			Y:      y,
-			Interp: convertPBM(pb.Modes[i]),
+			X: x,
+			Y: y,
 		})
-		x += pb.Widths[i]
-		y = pb.Ys[i]
+		return points
 	}
 
+	// Mode2
+	x := pb.Start.X
+	baseY := pb.Start.Y
+	// PBW is normalized segments over note length
+	// convert to absolute ms spans
+	totalW := 0.0
+	for _, w := range pb.Widths {
+		totalW += w
+	}
+	if totalW == 0 {
+		return sequence.Curve{}
+	}
+	scale := noteDurMs / totalW
+	y := baseY // PBYs are offsets, accumulate
+	for i := range pb.Widths {
+		dx := pb.Widths[i] * scale
+		x += dx
+		y += pb.Ys[i]
+		points = append(points, sequence.CurvePoint{
+			X:      x,
+			Y:      y * 10, // convert deci-semitones to cents
+			Interp: convertPBM(pb.Modes[i]),
+		})
+	}
+
+	// final point
+	points = append(points, sequence.CurvePoint{
+		X:      pb.Start.X + noteDurMs,
+		Y:      y,
+		Interp: convertPBM(pb.Modes[len(pb.Modes)-1]),
+	})
 	return points
 }
 

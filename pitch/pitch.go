@@ -25,10 +25,11 @@ func EncodeResamplerPitchBendString(curve sequence.Curve, note midi.Note, durati
 	buf.Grow(int(math.Round(durationMs/5)) * 2) // allocate some space
 	runTmp := make([]byte, 0, 8)                // scratch buffer for run length
 
-	for t := float64(0); t <= durationMs; t += 5 {
+	for t := float64(0); t <= durationMs; t += 2 {
 		pitch := curve.At(t)
-		diffCents := int12(math.Round(pitch - float64(note)*100))
-		if diffCents == last {
+		//diffCents := int12(math.Round(pitch - float64(note)*100))
+		cents := int12(math.Round(pitch))
+		if cents == last {
 			run++
 			continue
 		}
@@ -41,8 +42,8 @@ func EncodeResamplerPitchBendString(curve sequence.Curve, note midi.Note, durati
 			run = 0
 		}
 
-		writeInt12(&buf, diffCents)
-		last = diffCents
+		writeInt12(&buf, cents)
+		last = cents
 	}
 
 	// flush remaining run
