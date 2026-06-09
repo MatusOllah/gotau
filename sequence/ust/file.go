@@ -1,7 +1,9 @@
 package ust
 
 import (
+	"cmp"
 	"fmt"
+	"slices"
 
 	"github.com/SladkyCitron/gotau/internal/timeutil"
 	"github.com/SladkyCitron/gotau/sequence"
@@ -137,35 +139,38 @@ func pitchBendToCurve(pb *PitchBend, mode2 bool, noteDurMs float64) sequence.Cur
 
 	// Mode2
 	x := pb.Start.X
-	baseY := pb.Start.Y
-	// PBW is normalized segments over note length
-	// convert to absolute ms spans
-	totalW := 0.0
-	for _, w := range pb.Widths {
-		totalW += w
-	}
-	if totalW == 0 {
-		return sequence.Curve{}
-	}
-	scale := noteDurMs / totalW
-	y := baseY // PBYs are offsets, accumulate
+	y := pb.Start.Y
+	points = append(points, sequence.CurvePoint{
+		X:      x,
+		Y:      y * 10, // convert deci-semitones to cents
+		Interp: convertPBM(pb.Modes[0]),
+	})
 	for i := range pb.Widths {
-		dx := pb.Widths[i] * scale
-		x += dx
-		y += pb.Ys[i]
+		x += pb.Widths[i]
+		if i < len(pb.Ys) {
+			y = pb.Ys[i]
+		}
+		interpMode := PitchBendModeSine
+		if i < len(pb.Modes) {
+			interpMode = pb.Modes[i]
+		}
 		points = append(points, sequence.CurvePoint{
 			X:      x,
 			Y:      y * 10, // convert deci-semitones to cents
-			Interp: convertPBM(pb.Modes[i]),
+			Interp: convertPBM(interpMode),
 		})
 	}
 
 	// final point
 	points = append(points, sequence.CurvePoint{
-		X:      pb.Start.X + noteDurMs,
-		Y:      y,
-		Interp: convertPBM(pb.Modes[len(pb.Modes)-1]),
+		X: pb.Start.X + noteDurMs,
+		Y: y * 10, // convert deci-semitones to cents
 	})
+
+	slices.SortFunc(points, func(a, b sequence.CurvePoint) int {
+		return cmp.Compare(a.X, b.X)
+	})
+
 	return points
 }
 

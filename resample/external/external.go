@@ -190,7 +190,7 @@ func (r *Resampler) runCmd(input, output string, cfg resample.ResampleConfig) er
 		strconv.FormatInt(int64(cfg.Intensity*100), 10),
 		strconv.FormatInt(int64(cfg.Modulation*100), 10),
 		"!"+strconv.FormatFloat(cfg.Tempo, 'f', -1, 64), // apparently the tempo starts with "!" and not "T"???
-		pitch.EncodeResamplerPitchBendString(cfg.PitchBend, cfg.Pitch, cfg.Length),
+		pitch.EncodeResamplerPitchBendString(cfg.PitchBend),
 	)
 	if r.ConfigureCmd != nil {
 		r.ConfigureCmd(cmd)
@@ -218,11 +218,7 @@ func (r *Resampler) createTempWav(in aio.SampleReader, cfg resample.ResampleConf
 	_ = binary.Write(h, binary.LittleEndian, cfg.Modulation)
 	_ = binary.Write(h, binary.LittleEndian, cfg.Tempo)
 	_ = binary.Write(h, binary.LittleEndian, uint64(len(cfg.PitchBend)))
-	for _, pt := range cfg.PitchBend {
-		_ = binary.Write(h, binary.LittleEndian, uint64(pt.X))
-		_ = binary.Write(h, binary.LittleEndian, pt.Y)
-		_, _ = h.Write([]byte{byte(pt.Interp)})
-	}
+	_ = binary.Write(h, binary.LittleEndian, cfg.PitchBend)
 	path := filepath.Join(os.TempDir(), fmt.Sprintf("gotau-externalresampler-%016x.wav", h.Sum64()))
 
 	f, err := os.Create(path)

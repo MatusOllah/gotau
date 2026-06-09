@@ -1,36 +1,70 @@
 package pitch_test
 
 import (
+	"math/rand/v2"
 	"testing"
 
 	"github.com/SladkyCitron/gotau/pitch"
-	"github.com/SladkyCitron/gotau/sequence"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestEncodeResamplerPitchBendString(t *testing.T) {
-	curve := sequence.Curve{
-		{X: 0, Y: 0, Interp: sequence.CurveInterpolationLinear},
-		{X: 960, Y: 0},
+	tests := []struct {
+		name string
+		x    []float64
+		want string
+	}{
+		{
+			name: "empty",
+			x:    []float64{},
+			want: "AA",
+		},
+		{
+			name: "single point",
+			x:    []float64{1},
+			want: "AB",
+		},
+		{
+			name: "run length",
+			x:    []float64{0, 0, 0, 0},
+			want: "AA#3#",
+		},
+		{
+			name: "run length with 2 values",
+			x:    []float64{0, 0, 0, 0, 1, 1, 1, 1},
+			want: "AA#3#AB#3#",
+		},
+		{
+			name: "max",
+			x:    []float64{2047},
+			want: "f/",
+		},
+		{
+			name: "min",
+			x:    []float64{-2048},
+			want: "gA",
+		},
+		{
+			name: "clamping",
+			x:    []float64{-3000, 3000},
+			want: "gAf/",
+		},
 	}
 
-	got := pitch.EncodeResamplerPitchBendString(curve, 0, 1)
-
-	assert.Equal(t, got, "AA#200#")
-}
-
-func TestEncodeResamplerPitchBendString_NilCurve(t *testing.T) {
-	got := pitch.EncodeResamplerPitchBendString(nil, 0, 1)
-
-	assert.Equal(t, got, "AA")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, pitch.EncodeResamplerPitchBendString(tt.x))
+		})
+	}
 }
 
 func BenchmarkEncodeResamplerPitchBendString(b *testing.B) {
-	curve := sequence.Curve{
-		{X: 0, Y: 10, Interp: sequence.CurveInterpolationLinear},
-		{X: 960, Y: 20},
+	data := make([]float64, 1000)
+	for i := range data {
+		data[i] = rand.Float64()*4096 - 2048
 	}
+	b.ResetTimer()
 	for b.Loop() {
-		_ = pitch.EncodeResamplerPitchBendString(curve, 60, 1)
+		_ = pitch.EncodeResamplerPitchBendString(data)
 	}
 }

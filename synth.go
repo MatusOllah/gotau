@@ -293,7 +293,8 @@ func (s *Synth) renderNotes(note sequence.Note, prev *sequence.Note, next *seque
 
 func (s *Synth) renderSingleNote(note sequence.Note, otoEntry voicebank.OtoEntry, nextPreutterSec float64, next *sequence.Note) error {
 	// get preutterance of current note
-	preutterSec := s.getPreutter(otoEntry, note) / 1000
+	preutterMs := s.getPreutter(otoEntry, note)
+	preutterSec := preutterMs / 1000
 
 	// emit possible silence before note
 	if startTick := note.Position - s.sched.secondsToTicks(preutterSec); startTick > s.sched.tickPos {
@@ -322,24 +323,46 @@ func (s *Synth) renderSingleNote(note sequence.Note, otoEntry voicebank.OtoEntry
 	}
 
 	trueLength = math.Max(0, trueLength) // guard to prevent runtime panics
-
-	tail := s.peekTail()
+	trueLengthMs := trueLength * 1000    // milliseconds
 	noteBuf := make([]float32, int(trueLength*float64(s.sr)))
+	tail := s.peekTail()
 
-	trueLengthMs := trueLength * 1000 // milliseconds
-	trueLengthMs = math.Ceil((trueLengthMs+s.getStartPoint(note)+25)/50) * 50
+	// generate pitch bend curve
+	// note for myself: the timing math (samplePosMs) is probably wrong, thus the NaNs
+	// also we'll probably need to lerp the pitches with the previous ones and also crossfade them with the prev note's ones
+	const pitchIntervalTicks = 5
+	pitchLeadingMs := preutterMs * math.Pow(2, 1-note.Velocity/100)
+	positionMs := s.sched.ticksToSeconds(note.Position) * 1000
+	pitchCountMs := (positionMs + trueLengthMs) - (positionMs - pitchLeadingMs)
+	pitchCount := int(math.Ceil(float64(s.sched.secondsToTicks(pitchCountMs/1000)) / 5))
+	pitchCount = max(0, pitchCount)
+	pitchBend := make([]float64, pitchCount)
+	pitchSampleStartMs := positionMs - pitchLeadingMs
+	pitchIntervalMs := s.sched.ticksToSeconds(pitchIntervalTicks) * 1000
+	for i := range pitchBend {
+		samplePosMs := pitchSampleStartMs + float64(i)*pitchIntervalMs
+		pitch := note.PitchBend.AtClamped(samplePosMs - positionMs)
+		if math.IsNaN(pitch) {
+			println("is NaN")
+			pitch = 0
+		}
+		pitchBend[i] = pitch
+	}
+
 	resampleCfg := resample.ResampleConfig{
-		Pitch:       note.Note,
-		Velocity:    note.Velocity,
-		Flags:       note.Flags,
-		Offset:      otoEntry.Offset,
-		Length:      trueLengthMs,
+		Pitch:    note.Note,
+		Velocity: note.Velocity,
+		Flags:    note.Flags,
+		Offset:   otoEntry.Offset,
+		// this math below is only for the resampler, not the concatenator
+		// rounds up to the nearest 50ms
+		Length:      math.Ceil((trueLengthMs+s.getStartPoint(note)+25)/50) * 50,
 		Consonant:   otoEntry.Consonant,
 		Cutoff:      otoEntry.Cutoff,
 		Intensity:   note.Intensity,
 		Modulation:  note.Modulation,
 		Tempo:       s.sched.bpm,
-		PitchBend:   note.PitchBend,
+		PitchBend:   pitchBend,
 		AudioFormat: afmt.Format{SampleRate: freq.Frequency(s.sr) * freq.Hertz, NumChannels: 1},
 	}
 
@@ -458,7 +481,7 @@ func (s *Synth) renderSingleNote(note sequence.Note, otoEntry voicebank.OtoEntry
 
 	concatCfg := concat.ConcatenateConfig{
 		Offset:      otoEntry.Offset,
-		Length:      trueLength * 1000,
+		Length:      trueLengthMs,
 		Overlap:     s.getOverlap(otoEntry, note),
 		Envelope:    note.Envelope,
 		AudioFormat: afmt.Format{SampleRate: freq.Frequency(s.sr) * freq.Hertz, NumChannels: 1},

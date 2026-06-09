@@ -4,32 +4,24 @@ import (
 	"math"
 	"strconv"
 	"strings"
-
-	"github.com/SladkyCitron/gotau/sequence"
-	"gitlab.com/gomidi/midi/v2"
 )
 
-type int12 int16
-
 // EncodeResamplerPitchBendString encodes a pitch bend curve into the UTAU resampler pitch bend string format.
-func EncodeResamplerPitchBendString(curve sequence.Curve, note midi.Note, durationSec float64) string {
-	if len(curve) == 0 {
+func EncodeResamplerPitchBendString(x []float64) string {
+	if len(x) == 0 {
 		return "AA"
 	}
 
-	durationMs := durationSec * 1000
-	last := int12(math.MinInt16)
+	last := int16(math.MinInt16)
 	run := 0 // run length
 
 	var buf strings.Builder
-	buf.Grow(int(math.Round(durationMs/5)) * 2) // allocate some space
-	runTmp := make([]byte, 0, 8)                // scratch buffer for run length
+	buf.Grow(len(x) * 2)         // allocate some space
+	runTmp := make([]byte, 0, 8) // scratch buffer for run length
 
-	for t := float64(0); t <= durationMs; t += 2 {
-		pitch := curve.At(t)
-		//diffCents := int12(math.Round(pitch - float64(note)*100))
-		cents := int12(math.Round(pitch))
-		if cents == last {
+	for i := range x {
+		num := int16(math.Round(x[i]))
+		if num == last {
 			run++
 			continue
 		}
@@ -42,8 +34,8 @@ func EncodeResamplerPitchBendString(curve sequence.Curve, note midi.Note, durati
 			run = 0
 		}
 
-		writeInt12(&buf, cents)
-		last = cents
+		writeInt12(&buf, num)
+		last = num
 	}
 
 	// flush remaining run
@@ -58,7 +50,12 @@ func EncodeResamplerPitchBendString(curve sequence.Curve, note midi.Note, durati
 
 const b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 
-func writeInt12(buf *strings.Builder, v int12) {
+func writeInt12(buf *strings.Builder, v int16) {
+	if v == 0 {
+		if _, err := buf.WriteString("AA"); err != nil {
+			panic(err)
+		}
+	}
 	if v < -2048 {
 		v = -2048
 	}

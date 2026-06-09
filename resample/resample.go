@@ -79,8 +79,8 @@ type ResampleConfig struct {
 	// Tempo is the tempo in BPM.
 	Tempo float64
 
-	// PitchBend is the pitch bend curve. It is a curve that maps time (in MIDI ticks) to pitch (in semitones).
-	PitchBend sequence.Curve
+	// PitchBend is the pitch bend curve. It is a slice of pitches in cents, sampled at regular intervals (every 5 ticks).
+	PitchBend []float64
 
 	// AudioFormat is the audio format of the input and output audio data.
 	AudioFormat afmt.Format

@@ -40,10 +40,6 @@ func (s *Synth) getKeyFunc(cfg resample.ResampleConfig, path string, fileinfo fs
 		_ = binary.Write(w, binary.LittleEndian, cfg.Modulation)
 		_ = binary.Write(w, binary.LittleEndian, cfg.Tempo)
 		_ = binary.Write(w, binary.LittleEndian, uint64(len(cfg.PitchBend)))
-		for _, pt := range cfg.PitchBend {
-			_ = binary.Write(w, binary.LittleEndian, uint64(pt.X))
-			_ = binary.Write(w, binary.LittleEndian, pt.Y)
-			_, _ = w.Write([]byte{byte(pt.Interp)})
-		}
+		_ = binary.Write(w, binary.LittleEndian, cfg.PitchBend)
 	}
 }

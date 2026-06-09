@@ -66,7 +66,7 @@ func (c Curve) At(x float64) float64 {
 	case CurveInterpolationSine:
 		return lerp(start.Y, end.Y, (1-math.Cos(math.Pi*t))/2)
 	case CurveInterpolationRigid:
-		if x < end.X {
+		if t < 0.5 {
 			return start.Y
 		}
 		return end.Y
@@ -75,6 +75,20 @@ func (c Curve) At(x float64) float64 {
 	default:
 		return math.NaN()
 	}
+}
+
+// AtClamped is the same as [Curve.At], but it clamps the input to the curve's domain instead of returning NaN.
+func (c Curve) AtClamped(x float64) float64 {
+	if len(c) == 0 {
+		return 0
+	}
+	if x <= c[0].X {
+		return c[0].Y
+	}
+	if x >= c[len(c)-1].X {
+		return c[len(c)-1].Y
+	}
+	return c.At(x)
 }
 
 func lerp(a, b, t float64) float64 {
