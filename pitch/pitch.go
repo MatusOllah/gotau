@@ -55,6 +55,7 @@ func writeInt12(buf *strings.Builder, v int16) {
 		if _, err := buf.WriteString("AA"); err != nil {
 			panic(err)
 		}
+		return
 	}
 	if v < -2048 {
 		v = -2048
