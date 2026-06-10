@@ -141,10 +141,14 @@ func pitchBendToCurve(pb *PitchBend, mode2 bool, noteDurMs float64) umath.Curve 
 	// Mode2
 	x := pb.Start.X
 	y := pb.Start.Y
+	firstMode := PitchBendModeSine
+	if len(pb.Modes) > 0 {
+		firstMode = pb.Modes[0]
+	}
 	points = append(points, umath.CurvePoint{
 		X:      x,
 		Y:      y * 10, // convert deci-semitones to cents
-		Interp: convertPBM(pb.Modes[0]),
+		Interp: convertPBM(firstMode),
 	})
 	for i := range pb.Widths {
 		x += pb.Widths[i]
@@ -153,7 +157,7 @@ func pitchBendToCurve(pb *PitchBend, mode2 bool, noteDurMs float64) umath.Curve 
 		}
 		interpMode := PitchBendModeSine
 		if i < len(pb.Modes) {
-			interpMode = pb.Modes[i]
+			interpMode = pb.Modes[i+1]
 		}
 		points = append(points, umath.CurvePoint{
 			X:      x,
