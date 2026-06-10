@@ -6,7 +6,7 @@
 package concat
 
 import (
-	"github.com/SladkyCitron/gotau/sequence"
+	"github.com/SladkyCitron/gotau/umath"
 	"github.com/SladkyCitron/resona/afmt"
 )
 
@@ -29,7 +29,7 @@ type ConcatenateConfig struct {
 
 	// Envelope is the envelope curve to apply to the concatenated note.
 	// Usually the curve only has 5 points and linear interpolation.
-	Envelope sequence.Curve
+	Envelope umath.Curve
 
 	// AudioFormat is the audio format of the input and output audio data.
 	AudioFormat afmt.Format

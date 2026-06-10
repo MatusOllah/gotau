@@ -1,4 +1,4 @@
-package sequence
+package umath
 
 import (
 	"cmp"

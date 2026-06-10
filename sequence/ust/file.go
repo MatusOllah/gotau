@@ -7,17 +7,18 @@ import (
 
 	"github.com/SladkyCitron/gotau/internal/timeutil"
 	"github.com/SladkyCitron/gotau/sequence"
+	"github.com/SladkyCitron/gotau/umath"
 	"gopkg.in/ini.v1"
 )
 
 // 0,5,35,0,100,100,0,%,0,10,100
 // p1,p2,p3,v1,v2,v3,v4,%,p4,p5,v5
-var defaultEnvelope = sequence.Curve{
-	{X: 0, Y: 0, Interp: sequence.CurveInterpolationLinear},
-	{X: 5, Y: 1, Interp: sequence.CurveInterpolationLinear},
-	{X: 35, Y: 1, Interp: sequence.CurveInterpolationLinear},
-	{X: 0, Y: 0, Interp: sequence.CurveInterpolationLinear},
-	{X: 10, Y: 1, Interp: sequence.CurveInterpolationLinear},
+var defaultEnvelope = umath.Curve{
+	{X: 0, Y: 0, Interp: umath.CurveInterpolationLinear},
+	{X: 5, Y: 1, Interp: umath.CurveInterpolationLinear},
+	{X: 35, Y: 1, Interp: umath.CurveInterpolationLinear},
+	{X: 0, Y: 0, Interp: umath.CurveInterpolationLinear},
+	{X: 10, Y: 1, Interp: umath.CurveInterpolationLinear},
 }
 
 var _ sequence.Sequencer = (*File)(nil)
@@ -75,31 +76,31 @@ func (f *File) Sequence() (sequence.Sequence, error) {
 	return seq, nil
 }
 
-func envelopeToCurve(env *Envelope) sequence.Curve {
-	points := make(sequence.Curve, 0, 5)
+func envelopeToCurve(env *Envelope) umath.Curve {
+	points := make(umath.Curve, 0, 5)
 
 	if env == nil {
 		return defaultEnvelope
 	}
 
-	points = append(points, sequence.CurvePoint{X: env.P1, Y: env.V1 / 100, Interp: sequence.CurveInterpolationLinear})
-	points = append(points, sequence.CurvePoint{X: env.P2, Y: env.V2 / 100, Interp: sequence.CurveInterpolationLinear})
-	points = append(points, sequence.CurvePoint{X: env.P3, Y: env.V3 / 100, Interp: sequence.CurveInterpolationLinear})
-	points = append(points, sequence.CurvePoint{X: env.P4, Y: env.V3 / 100, Interp: sequence.CurveInterpolationLinear})
+	points = append(points, umath.CurvePoint{X: env.P1, Y: env.V1 / 100, Interp: umath.CurveInterpolationLinear})
+	points = append(points, umath.CurvePoint{X: env.P2, Y: env.V2 / 100, Interp: umath.CurveInterpolationLinear})
+	points = append(points, umath.CurvePoint{X: env.P3, Y: env.V3 / 100, Interp: umath.CurveInterpolationLinear})
+	points = append(points, umath.CurvePoint{X: env.P4, Y: env.V3 / 100, Interp: umath.CurveInterpolationLinear})
 	if env.HasRelease {
 		points[3].Y = env.V4 / 100
-		points = append(points, sequence.CurvePoint{X: env.P5, Y: env.V5 / 100, Interp: sequence.CurveInterpolationLinear})
+		points = append(points, umath.CurvePoint{X: env.P5, Y: env.V5 / 100, Interp: umath.CurveInterpolationLinear})
 	}
 
 	return points
 }
 
-func pitchBendToCurve(pb *PitchBend, mode2 bool, noteDurMs float64) sequence.Curve {
+func pitchBendToCurve(pb *PitchBend, mode2 bool, noteDurMs float64) umath.Curve {
 	if pb == nil {
-		return sequence.Curve{}
+		return umath.Curve{}
 	}
 	if len(pb.Widths) == 0 {
-		return sequence.Curve{}
+		return umath.Curve{}
 	}
 
 	// PBY defaults to 0 for every segment
@@ -112,14 +113,14 @@ func pitchBendToCurve(pb *PitchBend, mode2 bool, noteDurMs float64) sequence.Cur
 		pb.Modes = append(pb.Modes, PitchBendModeSine)
 	}
 
-	points := make(sequence.Curve, 0, len(pb.Widths)+1)
+	points := make(umath.Curve, 0, len(pb.Widths)+1)
 
 	// Mode1
 	if !mode2 {
 		x := pb.Start.X
 		y := pb.Start.Y
 		for i := range pb.Widths {
-			points = append(points, sequence.CurvePoint{
+			points = append(points, umath.CurvePoint{
 				X:      x,
 				Y:      y,
 				Interp: convertPBM(pb.Modes[i]),
@@ -130,7 +131,7 @@ func pitchBendToCurve(pb *PitchBend, mode2 bool, noteDurMs float64) sequence.Cur
 		}
 
 		// final point
-		points = append(points, sequence.CurvePoint{
+		points = append(points, umath.CurvePoint{
 			X: x,
 			Y: y,
 		})
@@ -140,7 +141,7 @@ func pitchBendToCurve(pb *PitchBend, mode2 bool, noteDurMs float64) sequence.Cur
 	// Mode2
 	x := pb.Start.X
 	y := pb.Start.Y
-	points = append(points, sequence.CurvePoint{
+	points = append(points, umath.CurvePoint{
 		X:      x,
 		Y:      y * 10, // convert deci-semitones to cents
 		Interp: convertPBM(pb.Modes[0]),
@@ -154,7 +155,7 @@ func pitchBendToCurve(pb *PitchBend, mode2 bool, noteDurMs float64) sequence.Cur
 		if i < len(pb.Modes) {
 			interpMode = pb.Modes[i]
 		}
-		points = append(points, sequence.CurvePoint{
+		points = append(points, umath.CurvePoint{
 			X:      x,
 			Y:      y * 10, // convert deci-semitones to cents
 			Interp: convertPBM(interpMode),
@@ -162,18 +163,18 @@ func pitchBendToCurve(pb *PitchBend, mode2 bool, noteDurMs float64) sequence.Cur
 	}
 
 	// final point
-	points = append(points, sequence.CurvePoint{
+	points = append(points, umath.CurvePoint{
 		X: pb.Start.X + noteDurMs,
 		Y: y * 10, // convert deci-semitones to cents
 	})
 
-	slices.SortFunc(points, func(a, b sequence.CurvePoint) int {
+	slices.SortFunc(points, func(a, b umath.CurvePoint) int {
 		return cmp.Compare(a.X, b.X)
 	})
 
 	return points
 }
 
-func convertPBM(mode PitchBendMode) sequence.CurveInterpolation {
-	return sequence.CurveInterpolation(mode) // this is enough for now
+func convertPBM(mode PitchBendMode) umath.CurveInterpolation {
+	return umath.CurveInterpolation(mode) // this is enough for now
 }

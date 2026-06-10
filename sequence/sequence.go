@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/SladkyCitron/gotau/internal/timeutil"
+	"github.com/SladkyCitron/gotau/umath"
 	"gitlab.com/gomidi/midi/v2"
 )
 
@@ -70,10 +71,10 @@ type Note struct {
 
 	// Envelope is the volume envelope curve. It should have 4 or 5 points.
 	// If it has 5 points, the last point represent the release phase (i.e. sustain end and fade-out).
-	Envelope Curve
+	Envelope umath.Curve
 
 	// PitchBend is the pitch bend curve. It is a curve that maps time (in milliseconds) to pitch (in cents).
-	PitchBend Curve
+	PitchBend umath.Curve
 
 	// Flags are the flags for passing to the resampler. These can be resampler-specific.
 	Flags Flags
