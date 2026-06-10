@@ -1,11 +1,9 @@
 # 🎵 GoTAU
 
-[![CI (Go)](https://github.com/SladkyCitron/gotau/actions/workflows/ci.yml/badge.svg)](https://github.com/SladkyCitron/gotau/actions/workflows/ci.yml) [![GitHub license](https://img.shields.io/github/license/SladkyCitron/gotau)](LICENSE) [![Made in Slovakia](https://raw.githubusercontent.com/pedromxavier/flag-badges/refs/heads/main/badges/SK.svg)](https://www.youtube.com/watch?v=UqXJ0ktrmh0)
+[![CI (Go)](https://github.com/SladkyCitron/gotau/actions/workflows/ci.yml/badge.svg)](https://github.com/SladkyCitron/gotau/actions/workflows/ci.yml) [![GitHub license](https://img.shields.io/github/license/SladkyCitron/gotau)](LICENSE) ![Made in Slovakia](https://raw.githubusercontent.com/pedromxavier/flag-badges/refs/heads/main/badges/SK.svg)
 
 **GoTAU** (pronounced *Go UTAU*) is a work-in-progress modern UTAU-compatible singing voice synthesizer written in Go.
 It's designed to be fast, modern, modular, and easy to use, while staying backwards compatible with the existing UTAU ecosystem.
-
-This project is also my senior high school IT project.
 
 Built with ❤️ for the vocal synth community.
 
@@ -32,8 +30,7 @@ Expect bugs and breaking changes.
 ## ⚠️ Known Limitations
 
 * No built-in resampler yet, users have to use an external one for now (I recommend [straycat-rs](https://github.com/UtaUtaUtau/straycat-rs))
-* No built-in concatenator yet, users have to use an external one for now
-* Only supports CV and VCV voicebanks
+* Only supports CV and VCV voicebanks for now
 
 ## 🐹 Why Go?
 
@@ -53,4 +50,5 @@ MIT License (see [LICENSE](LICENSE))
 ## ❤️ Acknowledgements
 
 * UTAU by Ameya/Ayame (飴屋／菖蒲)
+* [OpenUtau](https://github.com/openutau/OpenUtau)
 * The Vocaloid & UTAU community
