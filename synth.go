@@ -328,7 +328,7 @@ func (s *Synth) renderSingleNote(note sequence.Note, otoEntry voicebank.OtoEntry
 	tail := s.peekTail()
 
 	// generate pitch bend curve
-	// note for myself: the timing math (samplePosMs) is probably wrong, thus the NaNs
+	// the timing math is probably wrong, thus the NaNs
 	// also we'll probably need to lerp the pitches with the previous ones and also crossfade them with the prev note's ones
 	const pitchIntervalTicks = 5
 	pitchLeadingMs := preutterMs * math.Pow(2, 1-note.Velocity/100)
@@ -343,7 +343,6 @@ func (s *Synth) renderSingleNote(note sequence.Note, otoEntry voicebank.OtoEntry
 		samplePosMs := pitchSampleStartMs + float64(i)*pitchIntervalMs
 		pitch := note.PitchBend.AtClamped(samplePosMs - positionMs)
 		if math.IsNaN(pitch) {
-			println("is NaN")
 			pitch = 0
 		}
 		pitchBend[i] = pitch
