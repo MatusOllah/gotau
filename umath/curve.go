@@ -4,6 +4,8 @@ import (
 	"cmp"
 	"math"
 	"slices"
+
+	"github.com/SladkyCitron/gotau/umath/internal/ease"
 )
 
 // CurveInterpolation is the type of interpolation used between curve points.
@@ -11,9 +13,10 @@ type CurveInterpolation uint8
 
 const (
 	CurveInterpolationLinear CurveInterpolation = iota
-	CurveInterpolationSine
-	CurveInterpolationRigid
-	CurveInterpolationJump
+	CurveInterpolationSineIn
+	CurveInterpolationSineOut
+	CurveInterpolationSineInOut
+	CurveInterpolationSineOutIn
 )
 
 // Curve represents a curve. It consists of a list of curve points and the interpolation type between them.
@@ -32,22 +35,19 @@ type CurvePoint struct {
 	Interp CurveInterpolation
 }
 
-var cmpFn = func(a, b CurvePoint) int { return cmp.Compare(a.X, b.X) }
-
 // At calculates and returns the value at the position in milliseconds.
 func (c Curve) At(x float64) float64 {
 	if len(c) == 0 || x < c[0].X || x > c[len(c)-1].X {
 		return math.NaN()
 	}
 
-	// exact match shortcut
-	i, ok := slices.BinarySearchFunc(c, CurvePoint{X: x}, cmpFn)
+	// find start and end points that x sits in between
+	i, ok := slices.BinarySearchFunc(c, CurvePoint{X: x}, func(a, b CurvePoint) int {
+		return cmp.Compare(a.X, b.X)
+	})
 	if ok {
 		return c[i].Y
 	}
-
-	// find start and end points that tick sits in between
-	i, _ = slices.BinarySearchFunc(c, CurvePoint{X: x}, cmpFn)
 	if i == 0 || i >= len(c) {
 		return math.NaN()
 	}
@@ -58,20 +58,19 @@ func (c Curve) At(x float64) float64 {
 	if dx <= 0 {
 		return start.Y
 	}
-	t := (x - start.X) / dx
+	t := x - start.X
 
 	switch start.Interp {
 	case CurveInterpolationLinear:
-		return lerp(start.Y, end.Y, t)
-	case CurveInterpolationSine:
-		return lerp(start.Y, end.Y, (1-math.Cos(math.Pi*t))/2)
-	case CurveInterpolationRigid:
-		if t < 0.5 {
-			return start.Y
-		}
-		return end.Y
-	case CurveInterpolationJump:
-		return end.Y
+		return ease.Linear(t, start.Y, end.Y-start.Y, dx)
+	case CurveInterpolationSineIn:
+		return ease.SineIn(t, start.Y, end.Y-start.Y, dx)
+	case CurveInterpolationSineOut:
+		return ease.SineOut(t, start.Y, end.Y-start.Y, dx)
+	case CurveInterpolationSineInOut:
+		return ease.SineInOut(t, start.Y, end.Y-start.Y, dx)
+	case CurveInterpolationSineOutIn:
+		return ease.SineOutIn(t, start.Y, end.Y-start.Y, dx)
 	default:
 		return math.NaN()
 	}
@@ -89,8 +88,4 @@ func (c Curve) AtClamped(x float64) float64 {
 		return c[len(c)-1].Y
 	}
 	return c.At(x)
-}
-
-func lerp(a, b, t float64) float64 {
-	return a + t*(b-a)
 }

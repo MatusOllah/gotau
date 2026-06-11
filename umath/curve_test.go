@@ -11,10 +11,7 @@ import (
 func TestCurve_At(t *testing.T) {
 	c := umath.Curve{
 		{X: 0, Y: 0, Interp: umath.CurveInterpolationLinear},
-		{X: 10, Y: 10, Interp: umath.CurveInterpolationSine},
-		{X: 20, Y: 5, Interp: umath.CurveInterpolationRigid},
-		{X: 30, Y: 20, Interp: umath.CurveInterpolationJump},
-		{X: 40, Y: 30},
+		{X: 10, Y: 10},
 	}
 
 	assert.True(t, math.IsNaN(umath.Curve{}.At(0)))
@@ -28,12 +25,6 @@ func TestCurve_At(t *testing.T) {
 		{pos: 0, want: 0},
 		{pos: 5, want: 5},
 		{pos: 10, want: 10},
-		{pos: 15, want: 7.5},
-		{pos: 20, want: 5},
-		{pos: 25, want: 20},
-		{pos: 30, want: 20},
-		{pos: 35, want: 30},
-		{pos: 40, want: 30},
 	}
 
 	for _, test := range tests {

@@ -103,14 +103,12 @@ func pitchBendToCurve(pb *PitchBend, mode2 bool, noteDurMs float64) umath.Curve 
 		return umath.Curve{}
 	}
 
-	// PBY defaults to 0 for every segment
 	for len(pb.Ys) < len(pb.Widths) {
 		pb.Ys = append(pb.Ys, 0)
 	}
 
-	// PBM defaults to sine
 	for len(pb.Modes) < len(pb.Widths) {
-		pb.Modes = append(pb.Modes, PitchBendModeSine)
+		pb.Modes = append(pb.Modes, "")
 	}
 
 	points := make(umath.Curve, 0, len(pb.Widths)+1)
@@ -141,7 +139,7 @@ func pitchBendToCurve(pb *PitchBend, mode2 bool, noteDurMs float64) umath.Curve 
 	// Mode2
 	x := pb.Start.X
 	y := pb.Start.Y
-	firstMode := PitchBendModeSine
+	var firstMode PitchBendMode
 	if len(pb.Modes) > 0 {
 		firstMode = pb.Modes[0]
 	}
@@ -155,8 +153,8 @@ func pitchBendToCurve(pb *PitchBend, mode2 bool, noteDurMs float64) umath.Curve 
 		if i < len(pb.Ys) {
 			y = pb.Ys[i]
 		}
-		interpMode := PitchBendModeSine
-		if i < len(pb.Modes) {
+		var interpMode PitchBendMode
+		if i+1 < len(pb.Modes) {
 			interpMode = pb.Modes[i+1]
 		}
 		points = append(points, umath.CurvePoint{
@@ -180,5 +178,14 @@ func pitchBendToCurve(pb *PitchBend, mode2 bool, noteDurMs float64) umath.Curve 
 }
 
 func convertPBM(mode PitchBendMode) umath.CurveInterpolation {
-	return umath.CurveInterpolation(mode) // this is enough for now
+	switch mode {
+	case "r":
+		return umath.CurveInterpolationSineOut
+	case "s":
+		return umath.CurveInterpolationLinear
+	case "j":
+		return umath.CurveInterpolationSineIn
+	default:
+		return umath.CurveInterpolationSineInOut
+	}
 }

@@ -10,62 +10,7 @@ import (
 )
 
 // PitchBendMode represents a pitch bend segment interpolation mode.
-type PitchBendMode uint8
-
-const (
-	PitchBendModeLinear PitchBendMode = iota
-	PitchBendModeSine
-	PitchBendModeRigid
-	PitchBendModeJump
-)
-
-// String returns a string representation of the pitch bend mode.
-func (m PitchBendMode) String() string {
-	switch m {
-	case PitchBendModeLinear:
-		return "PitchBendModeLinear"
-	case PitchBendModeSine:
-		return "PitchBendModeSine"
-	case PitchBendModeRigid:
-		return "PitchBendModeRigid"
-	case PitchBendModeJump:
-		return "PitchBendModeJump"
-	default:
-		panic("invalid pitch bend mode")
-	}
-}
-
-// RawString returns a raw UST string representation of the pitch bend mode.
-func (m PitchBendMode) RawString() string {
-	switch m {
-	case PitchBendModeLinear:
-		return "l"
-	case PitchBendModeSine:
-		return "s"
-	case PitchBendModeRigid:
-		return "r"
-	case PitchBendModeJump:
-		return "j"
-	default:
-		panic("invalid pitch bend mode")
-	}
-}
-
-// ParsePitchBendMode parses a pitch bend mode string.
-func ParsePitchBendMode(s string) (PitchBendMode, error) {
-	switch s {
-	case "l":
-		return PitchBendModeLinear, nil
-	case "s":
-		return PitchBendModeSine, nil
-	case "r":
-		return PitchBendModeRigid, nil
-	case "j":
-		return PitchBendModeJump, nil
-	default:
-		return 0, fmt.Errorf("invalid pitch bend mode string: %s", s)
-	}
-}
+type PitchBendMode string
 
 // PitchBend represents the pitch bend data. Mode1 uses cents, Mode2 uses deci-semitones.
 type PitchBend struct {
@@ -116,14 +61,7 @@ func ParsePitchBend(typ, start, pbs, pbw, pby, pbm string) (pb *PitchBend, err e
 
 	// PBM
 	for m := range strings.SplitSeq(pbm, ",") {
-		if m == "" {
-			continue
-		}
-		mode, err := ParsePitchBendMode(m)
-		if err != nil {
-			return nil, err
-		}
-		pb.Modes = append(pb.Modes, mode)
+		pb.Modes = append(pb.Modes, PitchBendMode(m))
 	}
 
 	return pb, nil

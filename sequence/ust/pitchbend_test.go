@@ -1,49 +1,11 @@
 package ust_test
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/SladkyCitron/gotau/sequence/ust"
 	"github.com/stretchr/testify/assert"
 )
-
-func TestPitchBendMode_String(t *testing.T) {
-	assert.Equal(t, "PitchBendModeLinear", ust.PitchBendModeLinear.String())
-	assert.Equal(t, "PitchBendModeSine", ust.PitchBendModeSine.String())
-	assert.Equal(t, "PitchBendModeRigid", ust.PitchBendModeRigid.String())
-	assert.Equal(t, "PitchBendModeJump", ust.PitchBendModeJump.String())
-}
-
-func TestPitchBendMode_RawString(t *testing.T) {
-	assert.Equal(t, "l", ust.PitchBendModeLinear.RawString())
-	assert.Equal(t, "s", ust.PitchBendModeSine.RawString())
-	assert.Equal(t, "r", ust.PitchBendModeRigid.RawString())
-	assert.Equal(t, "j", ust.PitchBendModeJump.RawString())
-}
-
-func TestParsePitchBendMode(t *testing.T) {
-	tests := []struct {
-		name          string
-		s             string
-		expectedMode  ust.PitchBendMode
-		expectedError error
-	}{
-		{name: "PitchBendModeLinear", s: "l", expectedMode: ust.PitchBendModeLinear, expectedError: nil},
-		{name: "PitchBendModeSine", s: "s", expectedMode: ust.PitchBendModeSine, expectedError: nil},
-		{name: "PitchBendModeRigid", s: "r", expectedMode: ust.PitchBendModeRigid, expectedError: nil},
-		{name: "PitchBendModeJump", s: "j", expectedMode: ust.PitchBendModeJump, expectedError: nil},
-		{name: "Invalid", s: "x", expectedMode: 0, expectedError: fmt.Errorf("invalid pitch bend mode string: x")},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			mode, err := ust.ParsePitchBendMode(test.s)
-			assert.Equal(t, test.expectedError, err)
-			assert.Equal(t, test.expectedMode, mode)
-		})
-	}
-}
 
 func TestParsePitchBend(t *testing.T) {
 	pb, err := ust.ParsePitchBend(
@@ -62,7 +24,7 @@ func TestParsePitchBend(t *testing.T) {
 	assert.Equal(t, float64(2.0), pb.Start.Y)
 	assert.Equal(t, []float64{30, 40}, pb.Widths)
 	assert.Equal(t, []float64{0.5, 1.0}, pb.Ys)
-	assert.Equal(t, []ust.PitchBendMode{ust.PitchBendModeLinear, ust.PitchBendModeSine}, pb.Modes)
+	assert.Equal(t, []ust.PitchBendMode{"l", "s"}, pb.Modes)
 }
 
 func TestParsePitchBend_InvalidType(t *testing.T) {

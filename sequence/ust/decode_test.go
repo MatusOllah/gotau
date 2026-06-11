@@ -62,7 +62,7 @@ func TestDecode(t *testing.T) {
 							Start:  umath.XY[float64]{X: -40, Y: 0},
 							Widths: []float64{65, 69},
 							Ys:     []float64{0, 42},
-							Modes:  []ust.PitchBendMode{ust.PitchBendModeLinear, ust.PitchBendModeSine},
+							Modes:  []ust.PitchBendMode{"l", "s"},
 						},
 						Flags: "g0",
 					},
