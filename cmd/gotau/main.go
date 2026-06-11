@@ -87,7 +87,7 @@ func main() {
 		//cmd.Stdout = os.Stdout
 		//cmd.Stderr = os.Stderr
 	}
-	synth := gotau.New(44100, vb, res, &concat.Default{})
+	synth := gotau.New(44100, vb, res, &concat.Windowed{})
 	synth.SetPhonemizer(&phonemizer.Default{})
 	cacheDir, _ := diskcache.Dir(gotau.ResamplerDiskCacheDir)
 	synth.SetResamplerCache(diskcache.New(cacheDir, gotau.ResamplerDiskCacheExt))

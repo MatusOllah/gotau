@@ -8,10 +8,10 @@ import (
 	"github.com/SladkyCitron/resona/freq"
 )
 
-var _ Concatenator = (*Default)(nil)
+var _ Concatenator = (*Windowed)(nil)
 
-// Default is the default [Concatenator].
-type Default struct {
+// Windowed is the default [Concatenator].
+type Windowed struct {
 	env []float32
 }
 
@@ -19,24 +19,24 @@ func msToSamples(ms float64, sr freq.Frequency) int {
 	return int(math.Round(ms / 1000 * sr.Hertz()))
 }
 
-func (d *Default) interpolateEnvelope(startX int, startY float64, endX int, endY float64) {
-	if startX == endX || startX >= len(d.env) {
+func (c *Windowed) interpolateEnvelope(startX int, startY float64, endX int, endY float64) {
+	if startX == endX || startX >= len(c.env) {
 		return
 	}
 	if startX < 0 {
 		startX = 0
 	}
-	if endX > len(d.env) {
-		endX = len(d.env)
+	if endX > len(c.env) {
+		endX = len(c.env)
 	}
 	dx := float64(endX - startX)
 	dy := endY - startY
 	for i := startX; i < endX; i++ {
-		d.env[i] = float32(startY + dy*float64(i-startX)/dx)
+		c.env[i] = float32(startY + dy*float64(i-startX)/dx)
 	}
 }
 
-func (d *Default) Concatenate(tail []float32, note []float32, cfg ConcatenateConfig) ([]float32, error) {
+func (c *Windowed) Concatenate(tail []float32, note []float32, cfg ConcatenateConfig) ([]float32, error) {
 	if len(cfg.Envelope) < 4 || len(cfg.Envelope) > 5 {
 		return nil, errors.New("envelope curve must have 4 or 5 points")
 	}
@@ -56,10 +56,10 @@ func (d *Default) Concatenate(tail []float32, note []float32, cfg ConcatenateCon
 	trueNote := note[offsetSamples:]
 	buf := make([]float32, lengthSamples)
 
-	if len(d.env) < lengthSamples {
-		d.env = make([]float32, lengthSamples)
+	if len(c.env) < lengthSamples {
+		c.env = make([]float32, lengthSamples)
 	} else {
-		d.env = d.env[:lengthSamples]
+		c.env = c.env[:lengthSamples]
 	}
 
 	// interpolate envelope
@@ -71,25 +71,25 @@ func (d *Default) Concatenate(tail []float32, note []float32, cfg ConcatenateCon
 	if len(cfg.Envelope) == 5 {
 		p5 = msToSamples(cfg.Envelope[4].X, cfg.AudioFormat.SampleRate)
 	}
-	d.interpolateEnvelope(0, 0, p1, cfg.Envelope[0].Y)
-	d.interpolateEnvelope(p1, cfg.Envelope[0].Y, p1+p2, cfg.Envelope[1].Y)
+	c.interpolateEnvelope(0, 0, p1, cfg.Envelope[0].Y)
+	c.interpolateEnvelope(p1, cfg.Envelope[0].Y, p1+p2, cfg.Envelope[1].Y)
 	if len(cfg.Envelope) == 5 {
-		d.interpolateEnvelope(p1+p2, cfg.Envelope[1].Y, p1+p2+p5, cfg.Envelope[4].Y)
-		d.interpolateEnvelope(p1+p2+p5, cfg.Envelope[4].Y, lengthSamples-p4-p3, cfg.Envelope[2].Y)
+		c.interpolateEnvelope(p1+p2, cfg.Envelope[1].Y, p1+p2+p5, cfg.Envelope[4].Y)
+		c.interpolateEnvelope(p1+p2+p5, cfg.Envelope[4].Y, lengthSamples-p4-p3, cfg.Envelope[2].Y)
 	} else {
-		d.interpolateEnvelope(p1+p2, cfg.Envelope[1].Y, p2, cfg.Envelope[2].Y)
-		d.interpolateEnvelope(p2, cfg.Envelope[2].Y, lengthSamples-p4-p3, cfg.Envelope[2].Y)
+		c.interpolateEnvelope(p1+p2, cfg.Envelope[1].Y, p2, cfg.Envelope[2].Y)
+		c.interpolateEnvelope(p2, cfg.Envelope[2].Y, lengthSamples-p4-p3, cfg.Envelope[2].Y)
 		//d.interpolateEnvelope(p1+p2, cfg.Envelope[1].Y, lengthSamples-p4-p3, cfg.Envelope[2].Y)
 	}
-	d.interpolateEnvelope(lengthSamples-p4-p3, cfg.Envelope[2].Y, lengthSamples-p4, cfg.Envelope[3].Y)
-	d.interpolateEnvelope(lengthSamples-p4, cfg.Envelope[3].Y, lengthSamples, 0)
+	c.interpolateEnvelope(lengthSamples-p4-p3, cfg.Envelope[2].Y, lengthSamples-p4, cfg.Envelope[3].Y)
+	c.interpolateEnvelope(lengthSamples-p4, cfg.Envelope[3].Y, lengthSamples, 0)
 
 	// apply envelope and crossfade
 	w := hann(overlapSamples * 2)
 	for i := range buf {
 		var sample float32
 		if i < len(trueNote) {
-			sample = trueNote[i] * d.env[i]
+			sample = trueNote[i] * c.env[i]
 		}
 		if i < len(tail) && i < overlapSamples {
 			tailSample := tail[len(tail)-overlapSamples+i]
