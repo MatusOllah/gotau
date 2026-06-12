@@ -5,3 +5,6 @@ package umath
 type XY[T any] struct {
 	X, Y T
 }
+
+// XYs is a slice of [XY]s.
+type XYs[T any] []XY[T]

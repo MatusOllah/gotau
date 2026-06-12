@@ -29,7 +29,7 @@ type ConcatenateConfig struct {
 
 	// Envelope is the envelope curve to apply to the concatenated note.
 	// Usually the curve only has 5 points and linear interpolation.
-	Envelope umath.Curve
+	Envelope umath.Envelope
 
 	// AudioFormat is the audio format of the input and output audio data.
 	AudioFormat afmt.Format

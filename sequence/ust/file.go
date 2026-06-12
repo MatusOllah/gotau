@@ -13,12 +13,13 @@ import (
 
 // 0,5,35,0,100,100,0,%,0,10,100
 // p1,p2,p3,v1,v2,v3,v4,%,p4,p5,v5
-var defaultEnvelope = umath.Curve{
-	{X: 0, Y: 0, Interp: umath.CurveInterpolationLinear},
-	{X: 5, Y: 1, Interp: umath.CurveInterpolationLinear},
-	{X: 35, Y: 1, Interp: umath.CurveInterpolationLinear},
-	{X: 0, Y: 0, Interp: umath.CurveInterpolationLinear},
-	{X: 10, Y: 1, Interp: umath.CurveInterpolationLinear},
+
+var defaultEnvelope = umath.Envelope{
+	{X: 0, Y: 0},
+	{X: 5, Y: 1},
+	{X: 35, Y: 1},
+	{X: 0, Y: 0},
+	{X: 10, Y: 1},
 }
 
 var _ sequence.Sequencer = (*File)(nil)
@@ -76,20 +77,20 @@ func (f *File) Sequence() (sequence.Sequence, error) {
 	return seq, nil
 }
 
-func envelopeToCurve(env *Envelope) umath.Curve {
-	points := make(umath.Curve, 0, 5)
+func envelopeToCurve(env *Envelope) umath.Envelope {
+	points := make([]umath.XY[float64], 0, 5)
 
 	if env == nil {
 		return defaultEnvelope
 	}
 
-	points = append(points, umath.CurvePoint{X: env.P1, Y: env.V1 / 100, Interp: umath.CurveInterpolationLinear})
-	points = append(points, umath.CurvePoint{X: env.P2, Y: env.V2 / 100, Interp: umath.CurveInterpolationLinear})
-	points = append(points, umath.CurvePoint{X: env.P3, Y: env.V3 / 100, Interp: umath.CurveInterpolationLinear})
-	points = append(points, umath.CurvePoint{X: env.P4, Y: env.V3 / 100, Interp: umath.CurveInterpolationLinear})
+	points = append(points, umath.XY[float64]{X: env.P1, Y: env.V1 / 100})
+	points = append(points, umath.XY[float64]{X: env.P2, Y: env.V2 / 100})
+	points = append(points, umath.XY[float64]{X: env.P3, Y: env.V3 / 100})
+	points = append(points, umath.XY[float64]{X: env.P4, Y: env.V3 / 100})
 	if env.HasRelease {
 		points[3].Y = env.V4 / 100
-		points = append(points, umath.CurvePoint{X: env.P5, Y: env.V5 / 100, Interp: umath.CurveInterpolationLinear})
+		points = append(points, umath.XY[float64]{X: env.P5, Y: env.V5 / 100})
 	}
 
 	return points
