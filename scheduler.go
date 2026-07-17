@@ -2,7 +2,6 @@ package gotau
 
 import (
 	"cmp"
-	"iter"
 	"slices"
 
 	"github.com/SladkyCitron/gotau/internal/timeutil"
@@ -28,21 +27,6 @@ func (s *scheduler) ensureQueueSorted() {
 		return
 	}
 	slices.SortFunc(s.queue, cmpFn)
-}
-
-// popSeq returns and dequeues all notes that are ready to be rendered up to seconds.
-func (s *scheduler) popSeq(seconds float64) iter.Seq[sequence.Note] {
-	return func(yield func(sequence.Note) bool) {
-		ticks := s.secondsToTicks(seconds)
-		for len(s.queue) > 0 && ticks > 0 {
-			note := s.queue[0]
-			ticks -= note.Duration
-			if !yield(note) {
-				return
-			}
-			s.queue = s.queue[1:]
-		}
-	}
 }
 
 func (s *scheduler) pop() (sequence.Note, bool) {
