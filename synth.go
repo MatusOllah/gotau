@@ -29,31 +29,29 @@ import (
 
 // Synth is the main singing voice synthsizer that renders notes into audio samples.
 type Synth struct {
-	vb       *voicebank.Voicebank
-	ph       phonemizer.Phonemizer
-	res      resample.Resampler
-	cat      concat.Concatenator
-	resCache cache.Cache
-	sched    *scheduler
-	sr       int
-	buf      []float32
-	tailBuf  []float32
-	tailPos  int
-	prevNote *sequence.Note
+	vb        *voicebank.Voicebank
+	ph        phonemizer.Phonemizer
+	res       resample.Resampler
+	cat       concat.Concatenator
+	resCache  cache.Cache
+	sched     *scheduler
+	sr        int
+	renderBuf []float32
+	readPos   int
+	prevNote  *sequence.Note
 }
 
 // New creates a new [Synth] with the given sample rate, voicebank, resampler, and concatenator.
 func New(sr int, vb *voicebank.Voicebank, res resample.Resampler, cat concat.Concatenator) *Synth {
 	s := &Synth{
-		vb:       vb,
-		ph:       &phonemizer.Default{},
-		res:      res,
-		cat:      cat,
-		resCache: &cache.NopCache{},
-		sched:    &scheduler{},
-		sr:       sr,
-		buf:      make([]float32, 0, sr), // 1 second buffer by default
-		tailBuf:  make([]float32, sr),
+		vb:        vb,
+		ph:        &phonemizer.Default{},
+		res:       res,
+		cat:       cat,
+		resCache:  &cache.NopCache{},
+		sched:     &scheduler{},
+		sr:        sr,
+		renderBuf: make([]float32, 0, sr), // 1 second buffer by default
 	}
 	return s
 }
@@ -62,7 +60,7 @@ func New(sr int, vb *voicebank.Voicebank, res resample.Resampler, cat concat.Con
 // It sets the internal buffer to use when rendering notes.
 // The contents of the buffer are ignored.
 func (s *Synth) Buffer(buf []float32) {
-	s.buf = buf[0:cap(buf)]
+	s.renderBuf = buf[0:cap(buf)]
 }
 
 // SetPhonemizer sets the phonemizer.
@@ -108,106 +106,38 @@ func (s *Synth) EnqueueSequence(seq sequence.Sequence) {
 
 func (s *Synth) ReadSamples(p []float32) (int, error) {
 	n := 0
-
-	// drain the buffer
-	for n < len(p) && len(s.buf) > 0 {
-		copied := copy(p[n:], s.buf)
-		s.buf = s.buf[copied:]
-		n += copied
-	}
-
-	// fill the buffer
+	// fill the buffer and output as much as possible
 	for n < len(p) {
-		if len(s.sched.queue) == 0 {
-			if n == 0 {
-				return 0, io.EOF
+		// if the whole buffer has been read, render more notes
+		for s.readPos >= len(s.renderBuf) {
+			if len(s.sched.queue) == 0 {
+				if n == 0 {
+					return 0, io.EOF
+				}
+				return n, nil
 			}
-			return n, nil
-		}
 
-		seconds := float64(len(p)-n) / float64(s.sr)
-		var popped bool
-		for note := range s.sched.popSeq(seconds) {
-			popped = true
+			note, _ := s.sched.pop()
 			var prev *sequence.Note
 			if s.prevNote != nil {
 				prev = s.prevNote
 			}
-
 			var next *sequence.Note
 			if peek, ok := s.sched.peek(); ok {
 				next = &peek
 			}
 
 			if err := s.renderNotes(note, prev, next); err != nil {
-				copied := copy(p[n:], s.buf)
-				s.pushTail(p[n : n+copied])
-				s.buf = s.buf[copied:]
-				n += copied
-				return n, fmt.Errorf("gotau Synth: failed to render note %q: %w", note.Lyric, err)
-			}
-			s.prevNote = &note
-		}
-		if !popped {
-			// ensure we always pop at least some notes to prevent hanging
-			note, ok := s.sched.pop()
-			if !ok {
-				continue
-			}
-
-			var prev *sequence.Note
-			if s.prevNote != nil {
-				prev = s.prevNote
-			}
-
-			var next *sequence.Note
-			if peek, ok := s.sched.peek(); ok {
-				next = &peek
-			}
-
-			if err := s.renderNotes(note, prev, next); err != nil {
-				copied := copy(p[n:], s.buf)
-				s.pushTail(p[n : n+copied])
-				s.buf = s.buf[copied:]
-				n += copied
 				return n, fmt.Errorf("gotau Synth: failed to render note %q: %w", note.Lyric, err)
 			}
 			s.prevNote = &note
 		}
 
-		copied := copy(p[n:], s.buf)
-		s.buf = s.buf[copied:]
+		copied := copy(p[n:], s.renderBuf[s.readPos:])
+		s.readPos += copied
 		n += copied
 	}
 	return n, nil
-}
-
-func (s *Synth) pushTail(buf []float32) {
-	if len(s.tailBuf) == 0 || len(buf) == 0 {
-		return
-	}
-
-	if len(buf) >= len(s.tailBuf) {
-		// only keep the last len(s.tailBuf) samples of buf
-		copy(s.tailBuf, buf[len(buf)-len(s.tailBuf):])
-		s.tailPos = len(s.tailBuf)
-		return
-	}
-
-	// shift to make room
-	n := len(buf)
-	if s.tailPos < len(s.tailBuf) {
-		s.tailPos += copy(s.tailBuf[s.tailPos:], buf)
-		return
-	}
-
-	// shift left and append
-	copy(s.tailBuf, s.tailBuf[n:])
-	copy(s.tailBuf[len(s.tailBuf)-n:], buf)
-}
-
-func (s *Synth) peekTail() []float32 {
-	return s.tailBuf[:s.tailPos]
 }
 
 func (s *Synth) renderNotes(note sequence.Note, prev *sequence.Note, next *sequence.Note) error {
@@ -245,8 +175,9 @@ func (s *Synth) renderNotes(note sequence.Note, prev *sequence.Note, next *seque
 		}
 	}
 
-	// get preutterance of next note
-	var nextPreutterSec float64
+	// get preutterance and overlap of next note
+	var nextPreutter float64
+	var nextOverlap float64
 	if next != nil {
 		nextPhonemes := slices.Collect(s.ph.Phonemize([]phonemizer.Note{*phNext}, &phNotes[0], nil))
 		if len(nextPhonemes) > 0 {
@@ -257,7 +188,8 @@ func (s *Synth) renderNotes(note sequence.Note, prev *sequence.Note, next *seque
 				}
 			}
 			if nextOtoEntry, ok := s.resolvePhoneme(nextPhonemes[0], nextPrefix); ok {
-				nextPreutterSec = s.getPreutter(nextOtoEntry, *next) / 1000
+				nextPreutter = s.getPreutter(nextOtoEntry, *next)
+				nextOverlap = s.getOverlap(nextOtoEntry, *next)
 			}
 		}
 	}
@@ -275,15 +207,15 @@ func (s *Synth) renderNotes(note sequence.Note, prev *sequence.Note, next *seque
 
 		if !ok {
 			s.debugLog("fallback silence", note)
-			silenceSec := s.sched.ticksToSeconds(note.Duration) - nextPreutterSec
+			silenceSec := s.sched.ticksToSeconds(note.Duration) - nextPreutter/1000
 			silenceSec = math.Max(0, silenceSec) // guard to prevent runtime panics
 			buf := make([]float32, int(silenceSec*float64(s.sr)))
-			s.buf = append(s.buf, buf...)
+			s.renderBuf = append(s.renderBuf, buf...)
 			s.sched.tickPos += note.Duration
 			return nil
 		}
 
-		if err := s.renderSingleNote(notes[ph.Index], otoEntry, nextPreutterSec, next); err != nil {
+		if err := s.renderSingleNote(notes[ph.Index], otoEntry, nextPreutter, nextOverlap, next); err != nil {
 			return fmt.Errorf("failed to render phoneme %q: %w", otoEntry.Alias, err)
 		}
 	}
@@ -291,7 +223,7 @@ func (s *Synth) renderNotes(note sequence.Note, prev *sequence.Note, next *seque
 	return nil
 }
 
-func (s *Synth) renderSingleNote(note sequence.Note, otoEntry voicebank.OtoEntry, nextPreutterSec float64, next *sequence.Note) error {
+func (s *Synth) renderSingleNote(note sequence.Note, otoEntry voicebank.OtoEntry, nextPreutterMs float64, nextOverlap float64, next *sequence.Note) error {
 	// get preutterance of current note
 	preutterMs := s.getPreutter(otoEntry, note)
 	preutterSec := preutterMs / 1000
@@ -303,14 +235,14 @@ func (s *Synth) renderSingleNote(note sequence.Note, otoEntry voicebank.OtoEntry
 		silenceSec = math.Max(0, silenceSec) // guard to prevent runtime panics
 		buf := make([]float32, int(silenceSec*float64(s.sr)))
 		//TODO: we'll have to probably concatenate this silence buffer with the concatenator instead of append
-		s.buf = append(s.buf, buf...)
+		s.renderBuf = append(s.renderBuf, buf...)
 		s.sched.tickPos = startTick
 	}
 
 	curNoteStartSec := s.sched.ticksToSeconds(note.Position) - preutterSec
 	curNoteEndSec := s.sched.ticksToSeconds(note.Position + note.Duration)
 	// the current note wants to cut in exactly this many seconds
-	nextNoteCutInSec := curNoteEndSec - nextPreutterSec
+	nextNoteCutInSec := curNoteEndSec - nextPreutterMs/1000
 
 	// determine true rendering length based on timing and preutterance
 	var trueLength float64
@@ -324,8 +256,6 @@ func (s *Synth) renderSingleNote(note sequence.Note, otoEntry voicebank.OtoEntry
 
 	trueLength = math.Max(0, trueLength) // guard to prevent runtime panics
 	trueLengthMs := trueLength * 1000    // milliseconds
-	noteBuf := make([]float32, int(trueLength*float64(s.sr)))
-	tail := s.peekTail()
 
 	// generate pitch bend curve
 	// the timing math is probably wrong, thus the NaNs
@@ -425,7 +355,8 @@ func (s *Synth) renderSingleNote(note sequence.Note, otoEntry voicebank.OtoEntry
 		doCache = true
 	}
 
-	if _, err := resampled.ReadSamples(noteBuf); err != nil && err != io.EOF {
+	noteBuf, err := aio.ReadAll(resampled)
+	if err != nil {
 		return fmt.Errorf("failed to read resampled audio: %w", err)
 	}
 
@@ -478,18 +409,21 @@ func (s *Synth) renderSingleNote(note sequence.Note, otoEntry voicebank.OtoEntry
 		}()
 	}
 
+	correction := preutterMs - nextPreutterMs + nextOverlap
 	concatCfg := concat.ConcatenateConfig{
-		Offset:      otoEntry.Offset,
-		Length:      trueLengthMs,
+		Offset:      s.getStartPoint(note),
+		Duration:    note.Duration,
+		Tempo:       s.sched.bpm,
+		Resolution:  s.sched.tpqn,
+		LengthDelta: correction,
 		Overlap:     s.getOverlap(otoEntry, note),
 		Envelope:    note.Envelope,
 		AudioFormat: afmt.Format{SampleRate: freq.Frequency(s.sr) * freq.Hertz, NumChannels: 1},
 	}
-	out, err := s.cat.Concatenate(tail, noteBuf, concatCfg)
+	s.renderBuf, err = s.cat.Concatenate(s.renderBuf, noteBuf, concatCfg)
 	if err != nil {
 		return fmt.Errorf("failed to concatenate: %w", err)
 	}
-	s.buf = append(s.buf, out...)
 
 	// wait for caching to finish and check error
 	if doCache {

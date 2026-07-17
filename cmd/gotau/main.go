@@ -15,7 +15,7 @@ import (
 	"github.com/SladkyCitron/resona/freq"
 
 	"github.com/SladkyCitron/gotau/cache/diskcache"
-	"github.com/SladkyCitron/gotau/concat"
+	external_cat "github.com/SladkyCitron/gotau/concat/external"
 	"github.com/SladkyCitron/gotau/phonemizer"
 	"github.com/SladkyCitron/gotau/resample/external"
 	"github.com/SladkyCitron/gotau/sequence/ust"
@@ -87,7 +87,12 @@ func main() {
 		//cmd.Stdout = os.Stdout
 		//cmd.Stderr = os.Stderr
 	}
-	synth := gotau.New(44100, vb, res, &concat.Windowed{})
+	cat := external_cat.New(`C:\Users\matus\Documents\Go\gotau\wavtool-yawu.exe`, afmt.SampleFormat{16, afmt.SampleEncodingInt, binary.LittleEndian})
+	cat.ConfigureCmd = func(cmd *exec.Cmd) {
+		//cmd.Stdout = os.Stdout
+		//cmd.Stderr = os.Stderr
+	}
+	synth := gotau.New(44100, vb, res, cat)
 	synth.SetPhonemizer(&phonemizer.Default{})
 	cacheDir, _ := diskcache.Dir(gotau.ResamplerDiskCacheDir)
 	synth.SetResamplerCache(diskcache.New(cacheDir, gotau.ResamplerDiskCacheExt))
