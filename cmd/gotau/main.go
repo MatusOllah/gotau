@@ -24,6 +24,8 @@ import (
 )
 
 func main() {
+	// miku
+
 	if len(os.Args) != 4 {
 		fmt.Fprintf(os.Stderr, "Usage: %s voicebank.zip song.ust output.wav", os.Args[0])
 		os.Exit(1)
