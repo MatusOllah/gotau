@@ -12,6 +12,7 @@ import (
 
 	_ "image/png"
 
+	"github.com/SladkyCitron/gotau/voicebank/otoini"
 	"github.com/SladkyCitron/resona/codec"
 	_ "github.com/SladkyCitron/resona/codec/au"
 	_ "github.com/SladkyCitron/resona/codec/qoa"
@@ -168,7 +169,7 @@ type Voicebank struct {
 	Readme string
 
 	// Oto is the voicebank's oto.ini configuration.
-	Oto Oto
+	Oto otoini.Oto
 
 	// PrefixMap is the voicebank's prefix.map configuration.
 	// It is only valid if the prefix.map file is present.
@@ -184,9 +185,7 @@ type voicebankConfig struct {
 }
 
 // using a "universal" Option type here instead of something like OpenOption just in case
-// if we want to add more functions beyond just reading voicebanks in the future.
-// also voicebank.Option sounds better than voicebank.VoicebankOption imo and
-// it still distinguishes from voicebank.OtoOption well enough :3
+// if we want to add more functions beyond just reading voicebanks in the future
 
 // Option represents an option for passing into voicebank-related functions and methods.
 type Option func(*voicebankConfig)
@@ -406,14 +405,14 @@ func parseCharacterInfo(fsys fs.FS, cfg *voicebankConfig) (*CharacterInfo, error
 	return info, nil
 }
 
-func parseOtoIni(fsys fs.FS, _path string, enc encoding.Encoding) (Oto, error) {
+func parseOtoIni(fsys fs.FS, _path string, enc encoding.Encoding) (otoini.Oto, error) {
 	f, err := fsys.Open(_path)
 	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
 
-	oto, err := DecodeOto(f, OtoWithEncoding(enc), OtoWithDirectory(path.Dir(_path)))
+	oto, err := otoini.Decode(f, otoini.WithEncoding(enc), otoini.WithDirectory(path.Dir(_path)))
 	if err != nil {
 		return nil, err
 	}

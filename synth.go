@@ -18,6 +18,7 @@ import (
 	"github.com/SladkyCitron/gotau/resample"
 	"github.com/SladkyCitron/gotau/sequence"
 	"github.com/SladkyCitron/gotau/voicebank"
+	"github.com/SladkyCitron/gotau/voicebank/otoini"
 	"github.com/SladkyCitron/resona/afmt"
 	"github.com/SladkyCitron/resona/aio"
 	"github.com/SladkyCitron/resona/codec"
@@ -223,7 +224,7 @@ func (s *Synth) renderNotes(note sequence.Note, prev *sequence.Note, next *seque
 	return nil
 }
 
-func (s *Synth) renderSingleNote(note sequence.Note, otoEntry voicebank.OtoEntry, nextPreutterMs float64, nextOverlap float64, next *sequence.Note) error {
+func (s *Synth) renderSingleNote(note sequence.Note, otoEntry otoini.Entry, nextPreutterMs float64, nextOverlap float64, next *sequence.Note) error {
 	// get preutterance of current note
 	preutterMs := s.getPreutter(otoEntry, note)
 	preutterSec := preutterMs / 1000
@@ -437,10 +438,10 @@ func (s *Synth) renderSingleNote(note sequence.Note, otoEntry voicebank.OtoEntry
 	return nil
 }
 
-func (s *Synth) resolvePhoneme(ph phonemizer.Phoneme, prefix voicebank.Prefix) (e voicebank.OtoEntry, ok bool) {
+func (s *Synth) resolvePhoneme(ph phonemizer.Phoneme, prefix voicebank.Prefix) (e otoini.Entry, ok bool) {
 	if ph.Error != nil {
 		// log error??
-		return voicebank.OtoEntry{}, false
+		return otoini.Entry{}, false
 	}
 
 	for _, alias := range ph.Candidates {
@@ -448,10 +449,10 @@ func (s *Synth) resolvePhoneme(ph phonemizer.Phoneme, prefix voicebank.Prefix) (
 			return e, true
 		}
 	}
-	return voicebank.OtoEntry{}, false
+	return otoini.Entry{}, false
 }
 
-func (s *Synth) getPreutter(otoEntry voicebank.OtoEntry, note sequence.Note) float64 {
+func (s *Synth) getPreutter(otoEntry otoini.Entry, note sequence.Note) float64 {
 	if note.Preutterance != nil {
 		return *note.Preutterance
 	}
@@ -462,7 +463,7 @@ func (s *Synth) getStartPoint(note sequence.Note) float64 {
 	return note.StartPoint * math.Pow(2, 1-note.Velocity/100)
 }
 
-func (s *Synth) getOverlap(otoEntry voicebank.OtoEntry, note sequence.Note) float64 {
+func (s *Synth) getOverlap(otoEntry otoini.Entry, note sequence.Note) float64 {
 	if note.VoiceOverlap != nil {
 		return *note.VoiceOverlap
 	}

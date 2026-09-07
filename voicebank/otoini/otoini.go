@@ -1,4 +1,5 @@
-package voicebank
+// Package otoini provides functionality for reading and writing oto.ini files.
+package otoini
 
 import (
 	"bufio"
@@ -13,8 +14,8 @@ import (
 	"golang.org/x/text/transform"
 )
 
-// OtoEntry represents a single entry in an oto.ini file.
-type OtoEntry struct {
+// Entry represents a single entry in an oto.ini file.
+type Entry struct {
 	// Filename is the name of the audio file associated with this oto entry.
 	Filename string
 
@@ -41,67 +42,62 @@ type OtoEntry struct {
 }
 
 // FilePath returns the file path to the audio file.
-func (e OtoEntry) FilePath() string {
+func (e Entry) FilePath() string {
 	// using path and not filepath because fs.FS uses forward slashes
 	return path.Join(e.Directory, e.Filename)
 }
 
-// Why does oto.ini and Oto (the audio thingie) have to have the same name...?! 😭
-// It makes things so confusing...
-//
-// ... anyway...
-
 // Oto represents the oto.ini configuration in an UTAU voicebank.
 // It holds a list of phonemes, aliases, and their associated parameters.
-type Oto []OtoEntry
+type Oto []Entry
 
-type otoConfig struct {
+type config struct {
 	encoding       encoding.Encoding
 	comment        rune
 	floatPrecision int
 	dir            string
 }
 
-// OtoOption represents an option for passing into oto.ini-related functions and methods.
-type OtoOption func(*otoConfig)
+// Option represents an option for passing into oto.ini-related functions and methods.
+type Option func(*config)
 
-// OtoWithEncoding specifies the character encoding to use when reading or writing the oto.ini file.
-func OtoWithEncoding(encoding encoding.Encoding) OtoOption {
-	return func(cfg *otoConfig) {
+// WithEncoding specifies the character encoding to use when reading or writing the oto.ini file.
+func WithEncoding(encoding encoding.Encoding) Option {
+	return func(cfg *config) {
 		cfg.encoding = encoding
 	}
 }
 
-// OtoWithComment specifies the comment character to use when reading the oto.ini file.
+// WithComment specifies the comment character to use when reading the oto.ini file.
 // Lines beginning with this character without preceding whitespace will be ignored.
-func OtoWithComment(comment rune) OtoOption {
-	return func(cfg *otoConfig) {
+func WithComment(comment rune) Option {
+	return func(cfg *config) {
 		cfg.comment = comment
 	}
 }
 
-// OtoWithFloatPrecision specifies the float precision to use when writing float values in the oto.ini file.
-func OtoWithFloatPrecision(prec int) OtoOption {
+// WithFloatPrecision specifies the float precision to use when writing float values in the oto.ini file.
+func WithFloatPrecision(prec int) Option {
 	if prec < 0 {
 		panic("float precision cannot be negative")
 	}
 
-	return func(cfg *otoConfig) {
+	return func(cfg *config) {
 		cfg.floatPrecision = prec
 	}
 }
 
-// OtoWithDirectory specifies the path to the directory where the oto.ini file is to put
-// into the [OtoEntry.Directory] field when reading the oto.ini file.
-func OtoWithDirectory(dir string) OtoOption {
-	return func(cfg *otoConfig) {
+// WithDirectory specifies the path to the directory where the oto.ini file is to put
+// into the [Entry.Directory] field when reading the oto.ini file.
+func WithDirectory(dir string) Option {
+	return func(cfg *config) {
 		cfg.dir = dir
 	}
 }
 
-// DecodeOto parses and decodes an oto.ini file from the provided [io.Reader].
-func DecodeOto(r io.Reader, opts ...OtoOption) (Oto, error) {
-	cfg := &otoConfig{
+// Decode parses and decodes an oto.ini file from the provided [io.Reader].
+func Decode(r io.Reader, opts ...Option) (Oto, error) {
+	cfg := &config{
 		encoding: encoding.Nop,
 		comment:  '#',
 	}
@@ -176,7 +172,7 @@ func DecodeOto(r io.Reader, opts ...OtoOption) (Oto, error) {
 			return oto, fmt.Errorf("failed to parse overlap value for %s: %w", strconv.Quote(filename), err)
 		}
 
-		oto = append(oto, OtoEntry{
+		oto = append(oto, Entry{
 			Filename:     filename,
 			Directory:    cfg.dir,
 			Alias:        alias,
@@ -190,21 +186,19 @@ func DecodeOto(r io.Reader, opts ...OtoOption) (Oto, error) {
 	return oto, scan.Err()
 }
 
-//TODO: optimize with binary search and lookup table
-
-// Get retrieves an [OtoEntry] by its phoneme alias.
-func (o Oto) Get(alias string) (_ OtoEntry, ok bool) {
+// Get retrieves an [Entry] by its phoneme alias.
+func (o Oto) Get(alias string) (_ Entry, ok bool) {
 	for i := range o {
 		if o[i].Alias == alias {
 			return o[i], true
 		}
 	}
-	return OtoEntry{}, false
+	return Entry{}, false
 }
 
 // Encode encodes and writes the oto.ini entries to the provided [io.Writer].
-func (o Oto) Encode(w io.Writer, opts ...OtoOption) error {
-	cfg := &otoConfig{
+func (o Oto) Encode(w io.Writer, opts ...Option) error {
+	cfg := &config{
 		encoding:       encoding.Nop,
 		floatPrecision: -1,
 	}
