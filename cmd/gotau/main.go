@@ -84,12 +84,12 @@ func main() {
 	}
 
 	println("loading synth")
-	res := external.New(`C:\Users\matus\Documents\Go\gotau\straycat-rs.exe`, ".sc", afmt.SampleFormat{16, afmt.SampleEncodingInt, binary.LittleEndian})
+	res := external.New("straycat-rs", ".sc", afmt.SampleFormat{16, afmt.SampleEncodingInt, binary.LittleEndian})
 	res.ConfigureCmd = func(cmd *exec.Cmd) {
 		//cmd.Stdout = os.Stdout
 		//cmd.Stderr = os.Stderr
 	}
-	cat := external_cat.New(`C:\Users\matus\Documents\Go\gotau\wavtool-yawu.exe`, afmt.SampleFormat{16, afmt.SampleEncodingInt, binary.LittleEndian})
+	cat := external_cat.New("wavtool-yawu", afmt.SampleFormat{16, afmt.SampleEncodingInt, binary.LittleEndian})
 	cat.ConfigureCmd = func(cmd *exec.Cmd) {
 		//cmd.Stdout = os.Stdout
 		//cmd.Stderr = os.Stderr
